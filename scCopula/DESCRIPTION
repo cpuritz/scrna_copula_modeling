@@ -1,0 +1,25 @@
+Package: scCopula
+Type: Package
+Title: What the Package Does (Title Case)
+Version: 0.1.0
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Imports: 
+    copula,
+    energy,
+    Matrix,
+    mvtnorm,
+    optimParallel,
+    parallel,
+    rvinecopulib,
+    SingleCellExperiment,
+    stats,
+    SummarizedExperiment,
+    TruncatedNormal,
+    WGCNA
+Authors@R: 
+    person("Connor", "Puritz", , "connorpuritz2025@u.northwestern.edu", role = c("aut", "cre"))
