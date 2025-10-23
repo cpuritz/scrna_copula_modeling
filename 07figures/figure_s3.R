@@ -8,7 +8,6 @@ library(viridis)
 library(patchwork)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper")
 files <- list.files("Results/05times", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
 
@@ -65,5 +64,4 @@ pplt <- wrap_plots(hists, nrow = 1) &
         axis.text = element_text(size = 13, color = "black"),
         plot.title = element_text(size = 13, hjust = 0.5)
     )
-ggsave(plot = pplt, filename = "Figures/figure_s3.pdf",
-       width = 9.25, height = 4)
+ggsave(plot = pplt, filename = "Figures/figure_s3.pdf", width = 9.25, height = 4)

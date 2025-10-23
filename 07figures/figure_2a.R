@@ -5,7 +5,6 @@ library(scran)
 library(scater)
 library(fasano.franceschini.test)
 set.seed(10)
-setwd("~/Documents/Graduate School/Copula Paper")
 
 sce <- readRDS("Data/References/Clustering/bailey24-clust.rds")
 sce <- sce[, sce$cell_type == "Tregs"]

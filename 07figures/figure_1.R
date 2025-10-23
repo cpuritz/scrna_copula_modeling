@@ -7,16 +7,12 @@ library(ggsignif)
 library(ggsci)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper")
 source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
 
-if (!"res_all" %in% ls()) {
-    files <- list.files("Results/comps", full.names = TRUE)
-    files <- files[grepl(".rds", files)]
-    res_all <- do.call(rbind, lapply(files, readRDS))
-    res_all <- res_all[res_all$family != "boot", ]
-}
-res <- res_all
+files <- list.files("Results/comps", full.names = TRUE)
+files <- files[grepl(".rds", files)]
+res <- do.call(rbind, lapply(files, readRDS))
+res <- res[res$family != "boot", ]
 rownames(res) <- NULL
 
 res <- res %>%

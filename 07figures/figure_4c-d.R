@@ -6,7 +6,6 @@ library(tibble)
 library(ggsignif)
 
 set.seed(0)
-setwd("~/Documents/Graduate School/Copula Paper")
 source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
 
 comp_all <- NULL

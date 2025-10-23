@@ -2,7 +2,6 @@ library(SingleCellExperiment)
 library(ggplot2)
 library(ggsci)
 set.seed(0)
-setwd("~/Documents/Graduate School/Copula Paper")
 
 files <- list.files("Data/References/Subsets")
 dist <- NULL
