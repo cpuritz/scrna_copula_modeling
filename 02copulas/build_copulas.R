@@ -4,8 +4,6 @@ suppressMessages(library(scCopula))
 suppressMessages(library(copula))
 set.seed(1, kind = "L'Ecuyer-CMRG")
 
-setwd("~/copgen")
-
 # Read inputs
 ref <- commandArgs(trailingOnly = TRUE)[1]
 family <- commandArgs(trailingOnly = TRUE)[2]
