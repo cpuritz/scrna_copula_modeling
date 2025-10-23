@@ -4,8 +4,6 @@ suppressMessages(library(parallel))
 suppressMessages(library(SingleCellExperiment))
 set.seed(0, kind = "L'Ecuyer-CMRG")
 
-setwd("~/copgen")
-
 cores <- as.integer(commandArgs(trailingOnly = TRUE)[1])
 ix <- as.integer(commandArgs(trailingOnly = TRUE)[2])
 

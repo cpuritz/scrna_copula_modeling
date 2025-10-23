@@ -3,8 +3,6 @@ suppressMessages(library(scCopula))
 suppressMessages(library(parallel))
 set.seed(0, kind = "L'Ecuyer-CMRG")
 
-setwd("~/copgen")
-
 cores <- as.integer(commandArgs(trailingOnly = TRUE)[1])
 
 refs <- list.dirs("Results/02copulas", recursive = FALSE, full.names = FALSE)
