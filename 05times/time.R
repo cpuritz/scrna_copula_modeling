@@ -2,7 +2,6 @@ suppressMessages(library(SingleCellExperiment))
 suppressMessages(library(scCopula))
 suppressMessages(library(parallel))
 set.seed(0)
-setwd("~/copgen")
 
 family <- commandArgs(trailingOnly = TRUE)[1]
 task <- as.integer(commandArgs(trailingOnly = TRUE)[2])
