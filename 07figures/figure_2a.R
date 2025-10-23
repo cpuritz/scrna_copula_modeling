@@ -4,14 +4,15 @@ library(dplyr)
 library(scran)
 library(scater)
 library(fasano.franceschini.test)
-set.seed(7)
+set.seed(10)
+setwd("~/Documents/Graduate School/Copula Paper")
 
 sce <- readRDS("Data/References/Clustering/bailey24-clust.rds")
 sce <- sce[, sce$cell_type == "Tregs"]
 sce <- scuttle::logNormCounts(sce)
-hvg <- scran::getTopHVGs(scran::modelGeneVar(sce))
-hvg <- sample(hvg[1:100], 20)
-N <- 1000
+hvg <- scran::getTopHVGs(scran::modelGeneVar(sce), n = 200)
+hvg <- sample(hvg, 30)
+N <- 2000
 sce <- sce[hvg, sample(dim(sce)[2], N)]
 
 # Project X and Y onto the PCA space of X
@@ -34,12 +35,8 @@ sim <- function(sce, family) {
                 mle = FALSE,
                 likelihood = FALSE
             )
-        } else if (family == "vine") {
-            cop <- scCopula::fitVine(
-                sce_ct,
-                margins = "empirical",
-                cores = 4L
-            )
+        } else if (family == "ind") {
+            cop <- scCopula::fitIndep(sce_ct)
         }
         Qx <- apply(as.matrix(counts(sce_ct)), 1, function(x) {
             function(p) { quantile(x, probs = p, type = 1) }
@@ -53,8 +50,8 @@ sim <- function(sce, family) {
 }
 
 X <- t(counts(sce))
+X_ind <- sim(sce, family = "ind")
 X_norm <- sim(sce, family = "norm")
-X_vine <- sim(sce, family = "vine")
 
 pr <- prcomp(X)
 proj <- function(Y) {
@@ -62,14 +59,14 @@ proj <- function(Y) {
 }
 
 pc_ref <- pr$x[, 1:2]
+pc_ind <- proj(X_ind)[, 1:2]
 pc_norm <- proj(X_norm)[, 1:2]
-pc_vine <- proj(X_vine)[, 1:2]
 
 labels <- sapply(
-    X = list("2" = pc_norm, "3" = pc_vine),
+    X = list("2" = pc_ind, "3" = pc_norm),
     FUN = function(x) {
-        stat <- fasano.franceschini.test(pc_ref, x, nPermute = 0)$stat
-        paste("FF =", sprintf("%.2f", stat / (2 * N)^(3/2)))
+        p <- fasano.franceschini.test(pc_ref, x, threads = 4, seed = 0)$p.value
+        paste("p =", sprintf("%.2f", as.numeric(p)))
     }
 )
 labels["1"] <- "Reference"
@@ -77,20 +74,20 @@ labels["1"] <- "Reference"
 df0 <- mutate(as.data.frame(pc_ref), group = "Reference")
 df <- rbind(
     mutate(df0, plot = "1"),
+    mutate(rbind(df0, mutate(as.data.frame(pc_ind),
+                             group = "Independence")), plot = "2"),
     mutate(rbind(df0, mutate(as.data.frame(pc_norm),
-                             group = "Gaussian")), plot = "2"),
-    mutate(rbind(df0, mutate(as.data.frame(pc_vine),
-                             group = "Vine")), plot = "3")
+                             group = "Gaussian")), plot = "3")
 )
 df$group <- factor(df$group, levels = c("Reference",
-                                        "Gaussian",
-                                        "Vine"))
+                                        "Independence",
+                                        "Gaussian"))
 pca_ex <- list(df = df, labels = labels)
-colors <- setNames(c(ggsci::pal_npg()(10)[c(2, 3)], "#909090"),
-                   c("Gaussian", "Vine", "Reference"))
+colors <- setNames(c(ggsci::pal_npg()(10)[c(7, 5)], "#767676"),
+                   c("Independence", "Gaussian", "Reference"))
 pplt <- ggplot(pca_ex$df,
                  aes(x = PC1, y = PC2, color = group)) +
-    geom_point(size = 1.0) +
+    geom_point(size = 1.3) +
     scale_color_manual(values = colors) +
     facet_wrap(~plot, scales = "free", nrow = 1,
                labeller = labeller(plot = pca_ex$labels)) +
@@ -108,3 +105,4 @@ pplt <- ggplot(pca_ex$df,
           strip.background = element_blank(),
           strip.text = element_text(size = 13),
           legend.title = element_blank())
+saveRDS(pca_ex, file = "Results/04pca/pca_ex.rds")

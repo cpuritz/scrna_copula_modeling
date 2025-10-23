@@ -43,14 +43,16 @@ pplt <- ggplot(
         "hsa04911" = 25
     )) +
     scale_size_manual(values = c(
-        "HVG" = 3.0,
-        "hsa04260" = 2.5,
-        "hsa04915" = 2.55,
-        "hsa05224" = 3.5,
-        "hsa04911" = 2.25
+        "HVG" = 3.5,
+        "hsa04260" = 3.10,
+        "hsa04915" = 3.05,
+        "hsa05224" = 4.05,
+        "hsa04911" = 2.75
     )) +
     theme_bw() +
     theme(legend.title = element_blank(),
           legend.text = element_text(size = 13),
           axis.text = element_text(color = "black", size = 13),
           axis.title = element_text(size = 13))
+
+ggsave(pplt, file = "Figures/figure_s1.pdf", height = 6, width = 7.3)
