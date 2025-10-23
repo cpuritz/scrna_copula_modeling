@@ -1,9 +1,8 @@
 Package: scCopula
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Copula modeling of scRNA-seq data
 Version: 0.1.0
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Copula modeling of scRNA-seq data. Used to generate results for Puritz, Braun (2025).
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
