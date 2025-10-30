@@ -8,7 +8,7 @@ compareCounts(
   sce1,
   sce2,
   assay = "counts",
-  stats = c("pearson", "spearman", "kendall", "mi", "bicor", "dcor")
+  stats = c("pearson", "spearman", "kendall", "mi", "bicor", "dcor", "rhoA")
 )
 }
 \arguments{
