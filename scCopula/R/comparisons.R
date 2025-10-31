@@ -117,6 +117,13 @@ compareCounts <- function(sce1,
 
 ###############################################################################
 
+#' Pairwise zero-inflated Spearman's rho
+#'
+#' @description Compute matrix of pairwise zero-inflated Spearman's rho.
+#'
+#' @param X A matrix.
+#'
+#' @returns A matrix.
 rhoA_mat <- function(X) {
     d <- dim(X)[2]
     mat <- matrix(nrow = d, ncol = d)
@@ -133,6 +140,8 @@ rhoA_mat <- function(X) {
 ###############################################################################
 
 spm_Arends <- function(A, B) {
+	# Modified from https://github.com/JasperArends/SpmZID_Rcode
+
     N <- length(A)
 
     p00 <- sum(A == 0 & B == 0) / N  # P(X = 0, Y = 0)
