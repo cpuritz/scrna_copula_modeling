@@ -1,6 +1,6 @@
-suppressMessages(library(SingleCellExperiment))
-suppressMessages(library(scCopula))
-suppressMessages(library(parallel))
+library(SingleCellExperiment)
+library(scCopula)
+library(parallel)
 set.seed(0)
 
 family <- commandArgs(trailingOnly = TRUE)[1]
@@ -16,8 +16,6 @@ params <- expand.grid(genes, cells)
 
 ng <- params[task, 1]
 nc <- params[task, 2]
-
-message("Timing for family = ", family, ", genes = ", ng, ", cells = ", nc)
 
 if (family %in% c("norm", "norm_jitter")) {
     nrun <- 100L
@@ -71,4 +69,3 @@ df <- data.frame(
     time = unlist(times)
 )
 saveRDS(df, file = paste0("Results/05times/", family, "_", ng, "_", nc, ".rds"))
-message("Done!")

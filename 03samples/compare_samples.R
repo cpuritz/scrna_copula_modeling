@@ -1,7 +1,7 @@
-suppressMessages(library(dplyr))
-suppressMessages(library(scCopula))
-suppressMessages(library(parallel))
-suppressMessages(library(SingleCellExperiment))
+library(dplyr)
+library(scCopula)
+library(parallel)
+library(SingleCellExperiment)
 set.seed(0, kind = "L'Ecuyer-CMRG")
 
 cores <- as.integer(commandArgs(trailingOnly = TRUE)[1])
@@ -42,4 +42,3 @@ res <- mclapply(seq(dim(sims)[1]), function(i) {
 res <- do.call(rbind, res)
 rownames(res) <- NULL
 saveRDS(res, file = paste0("Results/03samples/comparisons_", ix, ".rds"))
-message("Done!")

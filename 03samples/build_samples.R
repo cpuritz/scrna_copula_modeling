@@ -1,6 +1,6 @@
-suppressMessages(library(SingleCellExperiment))
-suppressMessages(library(scCopula))
-suppressMessages(library(parallel))
+library(SingleCellExperiment)
+library(scCopula)
+library(parallel)
 set.seed(0, kind = "L'Ecuyer-CMRG")
 
 cores <- as.integer(commandArgs(trailingOnly = TRUE)[1])
@@ -12,7 +12,6 @@ nsample <- 20L
 
 for (ref_ix in seq_along(refs)) {
     ref <- refs[ref_ix]
-    message("Building ", ref, " ", ref_ix, "/", length(refs))
     sce <- readRDS(paste0("Data/References/Subsets/", ref, ".rds"))
     shuffles <- readRDS(paste0("Results/01shuffles/", ref, ".rds"))
     N <- floor(dim(sce)[2] / 2)
