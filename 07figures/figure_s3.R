@@ -43,25 +43,28 @@ hists[[1]] <- ggplot(time_ratio("Gaussian", "Jittered Gaussian"), aes(x)) +
     ggtitle("Gaussian / Jittered Gaussian") +
     scale_y_continuous(expand = c(0, 0, 0, 0.4),
                        breaks = pretty_breaks(n = 4))
-hists[[2]] <- ggplot(time_ratio("Vine", "Jittered Vine"), aes(x)) +
+hists[[2]] <- plot_spacer()
+hists[[3]] <- ggplot(time_ratio("Vine", "Jittered Vine"), aes(x)) +
     geom_histogram(bins = 15, fill = "#4DBBD5FF", color = "black") +
     xlab("Ratio") +
     ylab(NULL) +
     ggtitle("Vine / Jittered Vine") +
     scale_y_continuous(expand = c(0, 0, 0, 0.22))
-hists[[3]] <- ggplot(time_ratio("t", "ML-Gaussian"), aes(x)) +
+hists[[4]] <- plot_spacer()
+hists[[5]] <- ggplot(time_ratio("t", "ML-Gaussian"), aes(x)) +
     geom_histogram(bins = 11, fill = "#4DBBD5FF", color = "black") +
     xlab("Ratio") +
     ylab(NULL) +
-    ggtitle("t / ML-Gaussian") +
+    ggtitle("t / ML Gaussian") +
     scale_y_continuous(expand = c(0, 0, 0, 0.16))
 
-pplt <- wrap_plots(hists, nrow = 1) &
+pplt <- wrap_plots(hists, nrow = 1, widths = c(1, 0.01, 1, 0.01, 1)) &
     theme_bw() +
     theme(
         panel.grid = element_blank(),
-        axis.title = element_text(size = 13),
+        axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13, margin = margin(r = 7)),
         axis.text = element_text(size = 13, color = "black"),
         plot.title = element_text(size = 13, hjust = 0.5)
     )
-ggsave(plot = pplt, filename = "Figures/figure_s3.pdf", width = 9.25, height = 4)
+ggsave(plot = pplt, filename = "Figures/figure_s3.pdf", width = 9.5, height = 4)

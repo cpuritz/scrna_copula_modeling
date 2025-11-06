@@ -1,8 +1,10 @@
 library(SingleCellExperiment)
 library(ggplot2)
 library(ggsci)
+library(patchwork)
 set.seed(0)
 
+setwd("~/Documents/Graduate School/Copula Paper")
 files <- list.files("Data/References/Subsets")
 dist <- NULL
 for (i in seq_along(files)) {
@@ -14,6 +16,10 @@ for (i in seq_along(files)) {
     )
     dist <- rbind(dist, df)
 }
+
+dist_hdwgcna <- dist[dist$type == "hdwgcna", ]
+dist <- dist[dist$type != "hdwgcna", ]
+
 dist$type <- factor(
     dist$type,
     levels = c("HVG", "hsa05224", "hsa04915", "hsa04911", "hsa04260"),
@@ -24,7 +30,7 @@ colors <- setNames(
     c("HVG", "hsa04260", "hsa04915", "hsa05224", "hsa04911")
 )
 
-pplt <- ggplot(
+pplt1 <- ggplot(
     data = dist,
     aes(x = ncell, y = ngene, color = type, shape = type, fill = type,
         size = type)
@@ -54,4 +60,26 @@ pplt <- ggplot(
           axis.text = element_text(color = "black", size = 13),
           axis.title = element_text(size = 13))
 
-ggsave(pplt, file = "Figures/figure_s1.pdf", height = 6, width = 7.3)
+pplt2 <- ggplot(data = dist_hdwgcna, aes(x = ncell, y = ngene)) +
+    geom_point(size = 3) +
+    xlab("Cells") +
+    ylab("Genes") +
+    theme_bw() +
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size = 13),
+          axis.text = element_text(color = "black", size = 13),
+          axis.title = element_text(size = 13))
+
+get_annot <- function(x) {
+    plot_annotation(
+        title = x,
+        theme = theme(plot.title = element_text(face = 2, size = 20))
+    )
+}
+
+
+pplt <- wrap_elements(pplt1 + get_annot("a")) +
+    wrap_elements(pplt2 + get_annot("b")) +
+    plot_layout(nrow = 1, widths = c(0.56, 0.44))
+
+ggsave(pplt, file = "Figures/figure_s1.pdf", height = 5, width = 10)

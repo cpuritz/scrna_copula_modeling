@@ -4,13 +4,13 @@ library(scales)
 library(scran)
 set.seed(0)
 
-setwd("Data")
+setwd("~/Documents/Graduate School/Copula Paper")
 
 # Read in gene sets
-hsa04260 <- readRDS("genesets/hsa04260.rds")
-hsa04915 <- readRDS("genesets/hsa04915.rds")
-hsa05224 <- readRDS("genesets/hsa05224.rds")
-hsa04911 <- readRDS("genesets/hsa04911.rds")
+hsa04260 <- readRDS("Data/genesets/hsa04260.rds")
+hsa04915 <- readRDS("Data/genesets/hsa04915.rds")
+hsa05224 <- readRDS("Data/genesets/hsa05224.rds")
+hsa04911 <- readRDS("Data/genesets/hsa04911.rds")
 
 res <- list(
     c("bailey24-rpra04-moam", 17, "HVG"),
@@ -69,18 +69,16 @@ res$ngene <- as.numeric(res$ngene)
 dist <- NULL
 for (i in seq(dim(res)[1])) {
     x <- res[i, ]
-    sce <- readRDS(paste0("References/SingleCellExperiment/", x$subset, ".rds"))
+    sce <- readRDS(paste0("Data/References/SingleCellExperiment/", x$subset, ".rds"))
     if (x$type == "HVG") {
-        hvgs <- getTopHVGs(modelGeneVar(sce))[seq(x$ngene)]
-        sce <- sce[hvgs, ]
-        saveRDS(sce, paste0("References/Subsets/", x$subset, "-", x$type, ".rds"))
+        genes <- getTopHVGs(modelGeneVar(sce))[seq(x$ngene)]
     } else {
-        # Only keep genes expressed in at least 1% of cells
-        genes_min <- names(which(rowSums(counts(sce) > 0) > 0.02 * dim(sce)[2]))
-        gs <- intersect(get(x$type), genes_min)
-        sce <- sce[gs, ]
-        saveRDS(sce, paste0("References/Subsets/", x$subset, "-", x$type, ".rds"))
+        # Only keep genes expressed in at least 2% of cells
+        genes_keep <- names(which(rowSums(counts(sce) > 0) > 0.02 * dim(sce)[2]))
+        genes <- intersect(get(x$type), genes_keep)
     }
+    sce <- sce[genes, ]
+    #saveRDS(sce, paste0("Data/References/Subsets/", x$subset, "-", x$type, ".rds"))
     dist <- rbind(dist, c(subset = x$subset, ngene = dim(sce)[1],
                           ncell = dim(sce)[2], type = x$type))
 }
@@ -92,9 +90,12 @@ dist$type <- factor(
     levels = c("HVG", "hsa05224", "hsa04915", "hsa04911", "hsa04260")
 )
 
-pplt <- ggplot(data = dist,
-               aes(x = ncell, y = ngene, color = type, shape = type,
-                   fill = type, size = type)) +
+pplt <-
+    ggplot(
+        data = dist,
+        aes(x = ncell, y = ngene, color = type, shape = type, fill = type,
+            size = type)
+    ) +
     geom_point() +
     xlab("Cells") +
     ylab("Genes") +
@@ -127,7 +128,10 @@ pplt <- ggplot(data = dist,
         "hsa04911" = 1.9
     )) +
     theme_bw() +
-    theme(legend.title = element_blank(),
-          legend.text = element_text(size = 12),
-          axis.text = element_text(color = "black", size = 12),
-          axis.title = element_text(size = 12))
+    theme(
+        legend.title = element_blank(),
+        legend.text = element_text(size = 13),
+        axis.text = element_text(color = "black", size = 13),
+        axis.title = element_text(size = 13),
+    )
+saveRDS(pplt, file = "Figures/fig_s1a.rds")

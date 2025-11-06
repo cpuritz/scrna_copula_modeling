@@ -1,191 +1,161 @@
-suppressMessages(library(Seurat))
-suppressMessages(library(SingleCellExperiment))
-suppressMessages(library(WGCNA))
-suppressMessages(library(hdWGCNA))
-suppressMessages(library(dplyr))
-suppressMessages(library(mclust))
-set.seed(1, kind = "L'Ecuyer-CMRG")
+library(Seurat)
+library(SingleCellExperiment)
+library(WGCNA)
+library(hdWGCNA)
+library(dplyr)
+library(scCopula)
+set.seed(0, kind = "L'Ecuyer-CMRG")
 
-setwd("~/copgen")
+args <- commandArgs(trailingOnly = TRUE)
+ncores <- as.integer(args[1])
+family <- as.character(args[2])
+ref_ix <- as.integer(args[3])
+shuffle_ix <- as.integer(args[4])
 
-ncores <- as.integer(commandArgs(trailingOnly = TRUE)[1])
-family <- as.character(commandArgs(trailingOnly = TRUE)[2])
-message("Running hdWGCNA analysis for ", family, " with ", ncores, " cores.")
+refs <- list.files("Data/References/Subsets/")
+refs <- refs[grepl("hdwgcna", refs)]
+ref <- refs[ref_ix]
 
-sce <- readRDS("Data/References/Subsets/bailey24-rpra30-cd8t.rds")
+sce <- readRDS(paste0("Data/References/Subsets/", ref))
+shuffles <- readRDS(paste0("Results/01shuffles/", ref))
+ref <- unlist(strsplit(ref, ".rds"))
+N <- floor(dim(sce)[2] / 2)
 
-runv <- "v1"
-if (runv == "v1") {
-    # Model all cells as one cell type
-    sce$cell_type <- "CD8 T cell"
-    mu_formula <- corr_by <- "1"
-} else {
-    # Use original clusters as individual cell types
-    mu_formula <- corr_by <- "cell_type"
-}
+nsample <- 20L
 
+sce_ref <- sce[, shuffles[shuffle_ix, (N + 1):(2 * N)]]
+sce <- sce[, shuffles[shuffle_ix, 1:N]]
+
+# Basic preprocessing
 process <- function(obj) {
-    obj %>%
-        NormalizeData() %>%
-        ScaleData() %>%
-        RunPCA(seed = NULL)
-}
-
-get_modules <- function(obj) {
-    obj <- SetupForWGCNA(obj, wgcna_name = "test")
-    obj <- MetacellsByGroups(
-        seurat_obj = obj,
-        group.by = "cell_type",
-        reduction = "pca",
-        ident.group = "cell_type"
-    )
-    obj <- NormalizeMetacells(obj)
-    obj <- SetDatExpr(obj, assay = "RNA", layer = "data")
-    obj <- TestSoftPowers(obj)
-    obj <- ConstructNetwork(obj, overwrite_tom = TRUE)
-    
-    modules <- GetModules(obj)
-    missing_genes <- rownames(obj)[!rownames(obj) %in% modules$gene_name]
-    if (length(missing_genes) > 0) {
-        missing_genes_df <- do.call(rbind, lapply(missing_genes, function(x) {
-            c(x, "grey", "grey")
-        }))
-        missing_genes_df <- data.frame(missing_genes_df)
-        rownames(missing_genes_df) <- missing_genes
-        colnames(missing_genes_df) <- colnames(modules)
-        modules <- rbind(modules, missing_genes_df)
+    fun <- function(x) {
+        x %>%
+            NormalizeData() %>%
+            ScaleData() %>%
+            RunPCA(seed = NULL)
     }
-    return(modules)
+    return(suppressMessages(fun(obj)))
 }
 
-# Construct model of reference dataset
-if (family != "boot") {
-    message("Constructing input data")
-    input_data <- scDesign3::construct_data(
+# Fit copula
+if (family == "ind") {
+    cop <- scCopula::fitIndep(sce)
+} else if (family == "norm") {
+    cop <- scCopula::fitGaussian(
         sce = sce,
-        assay_use = "counts",
-        celltype = "cell_type",
-        other_covariates = NULL,
-        pseudotime = NULL,
-        spatial = NULL,
-        corr_by = corr_by
+        margins = "empirical",
+        mle = FALSE,
+        jitter = FALSE,
+        likelihood = FALSE
     )
-    
-    message("Fitting margins")
-    margins <- scDesign3::fit_marginal(
-        mu_formula = mu_formula,
-        sigma_formula = "1",
-        n_cores = ncores,
-        usebam = FALSE,
-        data = input_data,
-        family_use = "nb"
-    )
-    
-    message("Extracting parameters")
-    para_list <- scDesign3::extract_para(
+} else if (family == "norm_jitter") {
+    cop <- scCopula::fitGaussian(
         sce = sce,
-        assay_use = "counts",
-        marginal_list = margins,
-        family_use = "nb",
-        new_covariate = input_data$newCovariate,
-        n_cores = ncores,
-        data = input_data$dat
+        margins = "empirical",
+        mle = FALSE,
+        jitter = TRUE,
+        likelihood = FALSE
     )
-    
-    cop <- scDesign3::fit_copula(
+} else if (family == "vine_jitter") {
+    cop <- scCopula::fitVine(
         sce = sce,
-        assay_use = "counts",
-        input_data = input_data$dat,
-        marginal_list = margins,
-        family_use = "nb",
-        copula = ifelse(grepl("norm", family), "gaussian", "vine"),
-        DT = grepl("jitter", family),
-        family_set = c("indep", "gaussian", "frank", "clayton", "joe", "gumbel"),
-        n_cores = ncores
-    )$copula_list
+        margins = "empirical",
+        jitter = TRUE,
+        cores = ncores
+    )
 }
 
-# Process reference dataset
-message("Processing reference dataset")
-seurat_ref <- as.Seurat(sce)
+# Preprocess reference dataset
+seurat_ref <- as.Seurat(sce_ref)
 VariableFeatures(seurat_ref) <- rownames(seurat_ref)
 seurat_ref <- process(seurat_ref)
 
-nrun <- 50L
+# Generate and preprocess simulated datasets
 sims <- list()
-for (i in seq_len(nrun)) {
-    message("Simulating ", i, "/", nrun)
-    if (family == "boot") {
-        uct <- unique(sce$cell_type)
-        if (length(uct) > 1) {
-            boot_ix <- do.call(c, sapply(uct, function(x) {
-                sample(which(sce$cell_type == x), replace = TRUE)
-            }))
-        } else {
-            boot_ix <- sample(dim(sce)[2], replace = TRUE)
-        }
-        sce_boot <- sce[, boot_ix]
-        colnames(sce_boot) <- paste0("cell_", seq_len(dim(sce_boot)[2]))
-        
-        seurat_boot <- as.Seurat(sce_boot)
-        VariableFeatures(seurat_boot) <- rownames(seurat_boot)
-        seurat_boot <- process(seurat_boot)
-        sims[[i]] <- seurat_boot
-    } else {
-        new_counts <- scDesign3::simu_new(
-            sce = sce,
-            assay_use = "counts",
-            mean_mat = para_list$mean_mat,
-            sigma_mat = para_list$sigma_mat,
-            zero_mat = para_list$zero_mat,
-            copula_list = cop,
-            n_cores = ncores,
-            family_use = "nb",
-            input_data = input_data$dat,
-            new_covariate = input_data$newCovariate,
-            filtered_gene = NULL,
-            important_feature = rep(TRUE, dim(sce)[1])
-        )
-        sce_sim <- SingleCellExperiment(list(counts = new_counts),
-                                        colData = input_data$newCovariate)
-        logcounts(sce_sim) <- log1p(counts(sce_sim))
-
-        seurat_sim <- as.Seurat(sce_sim)
-        DefaultAssay(seurat_sim) <- "originalexp"
-        seurat_sim[["RNA"]] <- seurat_sim[["originalexp"]]
-        DefaultAssay(seurat_sim) <- "RNA"
-        seurat_sim[["originalexp"]] <- NULL
-        
-        VariableFeatures(seurat_sim) <- rownames(seurat_sim)
-        seurat_sim <- process(seurat_sim)
-        sims[[i]] <- seurat_sim
-    }
+for (i in seq_len(nsample)) {
+    Qx <- apply(as.matrix(counts(sce)), 1, function(x) {
+        function(p) { quantile(x, probs = p, type = 1) }
+    })
+    sce_sim <- scCopula::sampleCells(
+        N = dim(sce)[2],
+        Qx = Qx,
+        copula = cop
+    )
+    sce_sim$cell_type <- sce$cell_type
+    
+    seurat_sim <- as.Seurat(sce_sim)
+    DefaultAssay(seurat_sim) <- "originalexp"
+    seurat_sim[["RNA"]] <- seurat_sim[["originalexp"]]
+    DefaultAssay(seurat_sim) <- "RNA"
+    seurat_sim[["originalexp"]] <- NULL
+    VariableFeatures(seurat_sim) <- rownames(seurat_sim)
+    
+    sims[[i]] <- process(seurat_sim)
 }
-message("\n\n\n!!!!! DONE SIMULATING !!!!!\n\n\n")
-
-setwd(paste0("Scripts/06wgcna/", family))
 
 # Get modules for reference dataset
-message("Computing reference modules")
 enableWGCNAThreads(nThreads = ncores)
-mod_ref <- get_modules(seurat_ref)
+seurat_ref <- SetupForWGCNA(seurat_ref, wgcna_name = "test")
+seurat_ref <- MetacellsByGroups(
+    seurat_obj = seurat_ref,
+    group.by = "cell_type",
+    reduction = "pca",
+    ident.group = "cell_type",
+    target_metacells = 500
+)
+seurat_ref <- NormalizeMetacells(seurat_ref)
+seurat_ref <- SetDatExpr(seurat_ref, assay = "RNA", layer = "data")
+seurat_ref <- TestSoftPowers(seurat_ref)
+seurat_ref <- ConstructNetwork(seurat_ref, overwrite_tom = TRUE)
 
+# Module preservation
 res <- c()
-for (i in seq_len(nrun)) {
-    message("\n\n\n!!!!!!! MODULES ", i, "/", nrun, " !!!!!!!\n\n\n")
-    # Get modules for simulated dataset
+for (i in seq_len(nsample)) {
+    seurat_sim <- sims[[i]]
+    
+    # Project modules from reference dataset onto simulated dataset
+    seurat_sim <- ProjectModules(
+        seurat_obj = seurat_sim,
+        seurat_ref = seurat_ref,
+        wgcna_name = "test",
+        wgcna_name_proj = "projected",
+        assay = "RNA"
+    )
+    
+    # Construct metacells for simulated dataset
+    seurat_sim <- MetacellsByGroups(
+        seurat_obj = seurat_sim,
+        group.by = "cell_type",
+        reduction = "pca",
+        ident.group = "cell_type",
+        target_metacells = 500
+    )
+    seurat_sim <- NormalizeMetacells(seurat_sim)
+    
+    # Run module preservation analysis
+    seurat_sim <- SetDatExpr(seurat_sim, assay = "RNA", layer = "data")
+
     res[i] <- tryCatch({
-        mod_sim <- get_modules(sims[[i]])
-        mod_sim <- mod_sim[rownames(mod_ref), ]
-        mclust::adjustedRandIndex(mod_ref$module, mod_sim$module)
+        seurat_sim <- ModulePreservation(
+            seurat_obj = seurat_sim,
+            seurat_ref = seurat_ref,
+            name = "comp",
+            parallel = TRUE,
+            n_permutations = 100
+        )
+        p <- GetModulePreservation(seurat_sim, "comp")$Z
+        # Extract Z statistics
+        mean(p[!rownames(p) %in% c("gold", "grey"), "Zsummary.pres"])
     },
     error = function(e) {
         return(NA)
     })
 }
-saveRDS(
-    object = data.frame(ARI = res),
-    file = paste0("~/copgen/Results/06wgcna/mod_", family, "_", vrun, ".rds")
+res <- data.frame(
+    Z = res,
+    family = family,
+    ref = ref,
+    trial = shuffle_ix
 )
-
-message("Done!")
+fname <- paste0("Results/06wgcna/", family, "_", ref_ix, "_", shuffle_ix, ".rds")
+saveRDS(res, file = fname)

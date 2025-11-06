@@ -7,9 +7,10 @@ library(ggsignif)
 library(ggsci)
 set.seed(0)
 
+setwd("~/Documents/Graduate School/Copula Paper/")
 source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
 
-files <- list.files("Results/comps", full.names = TRUE)
+files <- list.files("Results/03samples", full.names = TRUE)
 files <- files[grepl(".rds", files)]
 res <- do.call(rbind, lapply(files, readRDS))
 res <- res[res$family != "boot", ]
@@ -55,7 +56,7 @@ res <- res %>%
         "nmle" ~ "ML Gaussian",
         "t" ~ "t",
         .default = family
-    )) %>% 
+    )) %>%
     dplyr::mutate(family = factor(
         family,
         levels = c("Independence", "Gaussian", "Jittered Gaussian",
@@ -86,7 +87,6 @@ pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
     theme(
         axis.title = element_text(size = 13),
         axis.text.x = element_text(size = 13, color = "black", angle = 45, hjust = 1),
-        axis.ticks.x = element_blank(),
         axis.text.y = element_text(size = 13, color = "black"),
         panel.border = element_blank(),
         axis.line = element_line(),
@@ -97,7 +97,7 @@ pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
         panel.spacing.x = unit(0.9, "cm")
     )
 
-ggsave(plot = pplt, filename = "Figures/figure_1.pdf", width = 10.5, height = 9)
+ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 10, height = 8.5)
 
 eff <- function(f1, f2, m) {
     r1 <- res[res$family == f1, ]
@@ -114,6 +114,17 @@ comp <- pairwise_wilcox_test(
     var_name = "var",
     adjust_method = "fdr"
 )
+
+# Swap families so that V1 always indicates the worse performer
+for (i in seq_len(dim(comp)[1])) {
+    if (comp[i, "stat"] < 0) {
+        comp[i, "stat"] <- -comp[i, "stat"]
+        f1 <- comp[i, "V1"]
+        comp[i, "V1"] <- comp[i, "V2"]
+        comp[i, "V2"] <- f1
+    }
+}
+
 effs <- apply(comp, 1, function(r) { eff(r["V1"], r["V2"], r["var"]) })
 
 comp <- comp %>%
@@ -133,7 +144,7 @@ comp <- comp %>%
         eff = sprintf("%.5f", abs(effs))
     ) %>%
     arrange(desc(eff))
-        
+
 write.csv(
     x = comp,
     file = "Tables/pairwise_pvalues.csv",
