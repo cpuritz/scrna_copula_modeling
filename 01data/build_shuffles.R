@@ -1,7 +1,6 @@
-suppressMessages(library(SingleCellExperiment))
+library(SingleCellExperiment)
 set.seed(1)
 
-setwd("~/copgen")
 refs <- list.files("Data/References/Subsets")
 ntrial <- 50L
 

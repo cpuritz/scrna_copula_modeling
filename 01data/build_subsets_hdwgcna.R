@@ -4,8 +4,6 @@ library(scales)
 library(scran)
 set.seed(2)
 
-setwd("~/Documents/Graduate School/Copula Paper")
-
 files <- list.files("Data/References/SingleCellExperiment")
 ngenes <- floor(10^runif(length(files), min = log10(500), max = log10(1000)))
 refs <- sapply(files, function(x) {

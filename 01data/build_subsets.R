@@ -4,8 +4,6 @@ library(scales)
 library(scran)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper")
-
 # Read in gene sets
 hsa04260 <- readRDS("Data/genesets/hsa04260.rds")
 hsa04915 <- readRDS("Data/genesets/hsa04915.rds")
@@ -78,7 +76,7 @@ for (i in seq(dim(res)[1])) {
         genes <- intersect(get(x$type), genes_keep)
     }
     sce <- sce[genes, ]
-    #saveRDS(sce, paste0("Data/References/Subsets/", x$subset, "-", x$type, ".rds"))
+    saveRDS(sce, paste0("Data/References/Subsets/", x$subset, "-", x$type, ".rds"))
     dist <- rbind(dist, c(subset = x$subset, ngene = dim(sce)[1],
                           ncell = dim(sce)[2], type = x$type))
 }
