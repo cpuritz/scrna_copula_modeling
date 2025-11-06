@@ -594,8 +594,8 @@ t_mle <- function(FX,
     mle <- stats::optim(
         par = nu0,
         fn = loglik,
-        lower = 2,
-        upper = 300,
+        lower = 2,      # lower bound at 2 to avoid undefined covariance
+        upper = 300,    # large but finite upper bound
         method = "L-BFGS-B",
         ...
     )

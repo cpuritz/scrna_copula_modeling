@@ -7,7 +7,7 @@
 #' @param X A matrix.
 #'
 #' @returns A matrix.
-mut_inf <- function(X) {
+mi_mat <- function(X) {
     n <- dim(X)[1]
     d <- dim(X)[2]
     mat <- matrix(nrow = d, ncol = d)
@@ -100,12 +100,12 @@ compareCounts <- function(sce1,
         if (cx %in% c("pearson", "spearman", "kendall")) {
             fun <- function(Y) { stats::cor(Y, method = cx) }
         } else if (cx == "mi") {
-            fun <- mut_inf
+            fun <- mi_mat
         } else if (cx == "bicor") {
             fun <- WGCNA::bicor
         } else if (cx == "dcor") {
             fun <- dcor_mat
-        } 
+        }
         res <- rbind(res, errs(fun(X1), fun(X2), cx))
     }
 
