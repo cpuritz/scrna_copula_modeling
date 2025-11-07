@@ -8,8 +8,8 @@ set.seed(10)
 
 sce <- readRDS("Data/References/Clustering/bailey24-clust.rds")
 sce <- sce[, sce$cell_type == "Tregs"]
-sce <- scuttle::logNormCounts(sce)
-hvg <- scran::getTopHVGs(scran::modelGeneVar(sce), n = 200)
+sce <- logNormCounts(sce)
+hvg <- getTopHVGs(modelGeneVar(sce), n = 200)
 hvg <- sample(hvg, 30)
 N <- 2000
 sce <- sce[hvg, sample(dim(sce)[2], N)]
