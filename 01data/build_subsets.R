@@ -88,6 +88,7 @@ dist$type <- factor(
     levels = c("HVG", "hsa05224", "hsa04915", "hsa04911", "hsa04260")
 )
 
+# Create Figure S1a
 pplt <-
     ggplot(
         data = dist,

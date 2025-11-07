@@ -32,6 +32,7 @@ dist <- as.data.frame(dist)
 dist$ngene <- as.integer(dist$ngene)
 dist$ncell <- as.integer(dist$ncell)
 
+# Create Figure S1b
 pplt <- ggplot(data = dist, aes(x = ncell, y = ngene)) +
     geom_point(size = 2.2) +
     xlab("Cells") +

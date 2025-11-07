@@ -11,7 +11,7 @@ files <- files[!grepl("boot", files)]
 res <- do.call(rbind, lapply(files, readRDS))
 res <- res %>%
     group_by(family, ref, trial) %>%
-    summarize(Z = mean(na.omit(Z)), .groups = "drop") %>%
+    summarize(Z = mean(Z), .groups = "drop") %>%
     group_by(family, ref) %>%
     summarize(Z = mean(Z), .groups = "drop") %>%
     mutate(family = case_match(
@@ -31,17 +31,17 @@ colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3)]
 names(colors) <- c("Independence", "Jittered Gaussian", "Gaussian",
                    "Jittered Vine")
 
-# comp <- boxplot_signif(
-#     df = res,
-#     cols = "Z",
-#     group_var = "family",
-#     block_var = "ref",
-#     annot = "stars",
-#     adjust_method = "fdr",
-#     offset = 0.03,
-#     scale = 0.04
-# )
-# comp$y <- min(comp$y) + c(0, 0.5, 3.5, 1.5, 2.5, 0) * diff(sort(comp$y))[1]
+comp <- boxplot_signif(
+    df = res,
+    cols = "Z",
+    group_var = "family",
+    block_var = "ref",
+    annot = "stars",
+    adjust_method = "fdr",
+    offset = 0.03,
+    scale = 0.04
+)
+comp$y <- min(comp$y) + c(0, 0.5, 3.5, 1.5, 2.5, 0) * diff(sort(comp$y))[1]
 
 pplt <- ggplot(res, aes(x = family, y = Z)) +
     geom_boxplot(aes(fill = family), outliers = FALSE) +

@@ -60,10 +60,6 @@ sink <- mclapply(1:ntrial, function(i) {
 		)
     } else if (family == "t") {
         fname <- paste0("Results/02copulas/", ref, "/nmle_", i, ".rds")
-        if (!file.exists(fname)) {
-            message("Gaussian copula not fit")
-            return(NULL)
-        }
         cop_norm <- readRDS(fname)
         Sigma <- getSigma(cop_norm$copula)
         cop <- fitT(
@@ -72,6 +68,8 @@ sink <- mclapply(1:ntrial, function(i) {
 			Sigma = Sigma,
 			likelihood = FALSE
 		)
+    } else if (family == "ind") {
+        cop <- fitIndep(sce_train)
     }
     saveRDS(cop, paste0("Results/02copulas/", ref, "/", family, "_", i, ".rds"))
     return(NULL)
