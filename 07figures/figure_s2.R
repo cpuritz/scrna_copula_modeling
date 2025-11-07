@@ -69,6 +69,7 @@ pplt <- ggplot(res, aes(x = family, y = p, fill = family)) +
           axis.text.x = element_text(size = 13, angle = 45, hjust = 1,
                                      color = "black"),
           axis.text.y = element_text(size = 13, color = "black"),
+          axis.title.y = element_text(size = 13, margin = margin(r = 5)),
           legend.position = "none",
           strip.text = element_text(size = 13, color = "black"),
           plot.margin = margin(5.5, 30, 5.5, 5.5),

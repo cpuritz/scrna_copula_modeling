@@ -64,7 +64,8 @@ pplt_b <- ggplot(res, aes(x = family, y = p, fill = family)) +
     theme(panel.border = element_blank(),
           axis.line = element_line(),
           panel.grid = element_blank(),
-          axis.title = element_text(size = 13),
+          axis.title.x = element_text(size = 13),
+          axis.title.y = element_text(size = 13, margin = margin(r = 5)),
           legend.title = element_text(size = 13),
           axis.text.x = element_text(size = 13, angle = 30, hjust = 1,
                                      color = "black"),
@@ -90,7 +91,8 @@ pplt_a <- ggplot(pca_ex$df,
     coord_cartesian(clip = "off") +
     guides(color = guide_legend(override.aes = list(size = 2.2))) +
     theme_bw() +
-    theme(axis.title = element_text(size = 13),
+    theme(axis.title.x = element_text(size = 13),
+          axis.title.y = element_text(size = 13, margin = margin(r = 5)),
           axis.ticks = element_blank(),
           axis.text = element_blank(),
           panel.grid = element_blank(),

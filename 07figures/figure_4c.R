@@ -62,4 +62,4 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
         panel.border = element_blank(),
         axis.line = element_line(color = "black")
     )
-#ggsave(pplt, filename = "Figures/figure_4c.pdf", width = 8, height = 5.75)
+ggsave(pplt, filename = "Figures/figure_4c.pdf", width = 8, height = 5.25)
