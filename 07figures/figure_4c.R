@@ -31,18 +31,6 @@ colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3)]
 names(colors) <- c("Independence", "Jittered Gaussian", "Gaussian",
                    "Jittered Vine")
 
-comp <- boxplot_signif(
-    df = res,
-    cols = "Z",
-    group_var = "family",
-    block_var = "ref",
-    annot = "stars",
-    adjust_method = "fdr",
-    offset = 0.03,
-    scale = 0.04
-)
-comp$y <- min(comp$y) + c(0, 0.5, 3.5, 1.5, 2.5, 0) * diff(sort(comp$y))[1]
-
 pplt <- ggplot(res, aes(x = family, y = Z)) +
     geom_boxplot(aes(fill = family), outliers = FALSE) +
     scale_fill_manual(values = colors) +
@@ -63,3 +51,35 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
         axis.line = element_line(color = "black")
     )
 ggsave(pplt, filename = "Figures/figure_4c.pdf", width = 8, height = 5.25)
+
+comp <- pairwise_wilcox_test(
+    df = res[res$family != "Independence", ],
+    cols = "Z",
+    group_var = "family",
+    block_var = "ref",
+    adjust_method = "fdr"
+)
+# Swap families so that V1 always indicates the better performer
+for (i in seq_len(dim(comp)[1])) {
+    if (comp[i, "stat"] < 0) {
+        comp[i, "stat"] <- -comp[i, "stat"]
+        f1 <- comp[i, "V1"]
+        comp[i, "V1"] <- comp[i, "V2"]
+        comp[i, "V2"] <- f1
+    }
+}
+
+effs <- apply(comp, 1, function(r) {
+    r1 <- res[res$family == r["V1"], ]
+    r2 <- res[res$family == r["V2"], ]
+    assertthat::assert_that(all(r1$ref == r2$ref))
+    return(effsize::cohen.d(r1$Z, r2$Z, paired = TRUE)$estimate)
+})
+
+comp <- comp %>%
+    rename(family1 = V1, family2 = V2, measure = var) %>%
+    mutate(pval = sprintf("%.5e", pval),
+           padj = sprintf("%.5e", padj),
+           stat = sprintf("%.5f", stat)) %>%
+    mutate(eff = sprintf("%.5f", abs(effs))) %>%
+    arrange(desc(eff))
