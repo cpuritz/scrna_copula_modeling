@@ -13,13 +13,14 @@ source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
 files <- list.files("Results/03samples", full.names = TRUE)
 files <- files[grepl(".rds", files)]
 res <- do.call(rbind, lapply(files, readRDS))
-res <- res[res$family != "boot", ]
 rownames(res) <- NULL
+res <- res[res$family != "boot", ]
 
 res <- res %>%
-    dplyr::filter(norm == "two") %>%
-    dplyr::select(-norm) %>%
-    tidyr::pivot_wider(names_from = stat, values_from = err) %>%
+    dplyr::filter(norm == "two" & family != "boot") %>%
+    dplyr::mutate(rmse = err / ngene) %>%
+    dplyr::select(-norm, -err) %>%
+    tidyr::pivot_wider(names_from = stat, values_from = rmse) %>%
     dplyr::group_by(ref, family, trial) %>%
     dplyr::summarize(
         ngene = unique(ngene),
@@ -76,12 +77,12 @@ df$value <- log10(df$value)
 pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
     geom_boxplot(outliers = FALSE) +
     geom_point(size = 0.7, position = position_dodge2(width = 0.22)) +
-    geom_line(aes(group = ref), linewidth = 0.02, linetype = "dashed",
+    geom_line(aes(group = ref), linewidth = 0.018, linetype = "dashed",
               color = "gray", position = position_dodge2(width = 0.22),
-              alpha = 0.8) +
+              alpha = 0.7) +
     scale_fill_manual(values = colors) +
     facet_wrap(~ variable, nrow = 2, scales = "free_y") +
-    ylab(expression(log[10](Frobenius~error))) +
+    ylab(expression(log[10](RMSE))) +
     xlab(NULL) +
     theme_bw() +
     theme(
@@ -97,7 +98,7 @@ pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
         panel.spacing.x = unit(0.9, "cm")
     )
 
-ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 10, height = 8.5)
+ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 10, height = 9)
 
 eff <- function(f1, f2, m) {
     r1 <- res[res$family == f1, ]
