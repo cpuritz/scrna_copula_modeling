@@ -66,7 +66,7 @@ for (ref_ix in seq_along(refs)) {
             }
         }
         
-        # Draw samples
+        # Sample cells
         for (j in seq(nsample)) {
             sce_sim <- get_sample()
             saveRDS(sce_sim, file = ofname(ref, method, trial, j))
