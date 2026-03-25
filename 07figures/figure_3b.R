@@ -70,6 +70,47 @@ pplt_b <- ggplot(res, aes(x = family, y = p, fill = family)) +
           legend.position = "none",
           plot.margin = margin(5.5, 20, 5.5, 5.5))
 
+comp <- pairwise_wilcox_test(
+    df = res[res$family != "Independence", ],
+    cols = "p",
+    group_var = "family",
+    block_var = "ref",
+    adjust_method = "fdr"
+)
+
+# Swap families so that V1 always indicates the better performer
+for (i in seq_len(dim(comp)[1])) {
+    if (comp[i, "stat"] < 0) {
+        comp[i, "stat"] <- -comp[i, "stat"]
+        f1 <- comp[i, "V1"]
+        comp[i, "V1"] <- comp[i, "V2"]
+        comp[i, "V2"] <- f1
+    }
+}
+
+effs <- apply(comp, 1, function(r) {
+    r1 <- res[res$family == r["V1"], ]
+    r2 <- res[res$family == r["V2"], ]
+    assertthat::assert_that(all(r1$ref == r2$ref))
+    return(effsize::cohen.d(r1$p, r2$p, paired = TRUE)$estimate)
+})
+
+comp <- comp %>%
+    rename(family1 = V1, family2 = V2) %>%
+    select(-var) %>%
+    mutate(pval = sprintf("%.5e", pval),
+           padj = sprintf("%.5e", padj),
+           stat = sprintf("%.5f", stat)) %>%
+    mutate(eff = sprintf("%.5f", abs(effs))) %>%
+    arrange(desc(eff))
+
+write.csv(
+    x = comp,
+    file = "Tables/pca_pvalues.csv",
+    row.names = FALSE,
+    quote = FALSE
+)
+
 ###############################################################################
 ## Main figure panel A ##
 
