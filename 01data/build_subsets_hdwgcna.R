@@ -24,6 +24,10 @@ for (i in seq_len(dim(refs)[1])) {
     }
     hvgs <- hvgs[seq_len(refs[i, "ngene"])]
     sce <- sce[hvgs, ]
+    
+    # Remove cells not expressing any gene
+    sce <- sce[, colSums(counts(sce)) > 0]
+    
     assertthat::assert_that(dim(sce)[1] == refs[i, "ngene"])
     saveRDS(sce, paste0("Data/References/Subsets/", ref, "-hdwgcna", ".rds"))
     dist <- rbind(dist, c(ref = ref, ngene = dim(sce)[1], ncell = dim(sce)[2]))

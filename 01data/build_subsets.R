@@ -69,13 +69,17 @@ for (i in seq(dim(res)[1])) {
     x <- res[i, ]
     sce <- readRDS(paste0("Data/References/SingleCellExperiment/", x$subset, ".rds"))
     if (x$type == "HVG") {
+        # Subset to top HVGs
         genes <- getTopHVGs(modelGeneVar(sce))[seq(x$ngene)]
+        sce <- sce[genes, ]
+        # Remove cells not expressing any gene
+        sce <- sce[, colSums(counts(sce)) > 0]
     } else {
         # Only keep genes expressed in at least 2% of cells
         genes_keep <- names(which(rowSums(counts(sce) > 0) > 0.02 * dim(sce)[2]))
         genes <- intersect(get(x$type), genes_keep)
+        sce <- sce[genes, ]
     }
-    sce <- sce[genes, ]
     saveRDS(sce, paste0("Data/References/Subsets/", x$subset, "-", x$type, ".rds"))
     dist <- rbind(dist, c(subset = x$subset, ngene = dim(sce)[1],
                           ncell = dim(sce)[2], type = x$type))
