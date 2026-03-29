@@ -13,5 +13,6 @@ dcor_mat(X)
 A matrix.
 }
 \description{
-Compute matrix of pairwise distance correlations.
+Compute upper triangular matrix of pairwise distance
+correlations.
 }

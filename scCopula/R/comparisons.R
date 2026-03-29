@@ -2,7 +2,7 @@
 
 #' Pairwise mutual information matrix
 #'
-#' @description Compute matrix of pairwise mutual information.
+#' @description Compute upper triangular matrix of pairwise mutual information.
 #'
 #' @param X A matrix.
 #'
@@ -18,12 +18,9 @@ mi_mat <- function(X) {
         py <- colSums(table_xy) / n
         sum(stats::na.omit(as.vector(pxy * log(pxy / px %*% t(py)))))
     }
-    for (i in seq(d)) {
-        mat[[i, i]] <- mi(X[, i], X[, i])
-    }
-    for (i in seq(1, d - 1)) {
-        for (j in seq(i + 1, d)) {
-            mat[[i, j]] <- mat[[j, i]] <- mi(X[, i], X[, j])
+    for (i in 1:(d - 1)) {
+        for (j in (i + 1):d) {
+            mat[[i, j]] <- mi(X[, i], X[, j])
         }
     }
     return(mat)
@@ -33,7 +30,8 @@ mi_mat <- function(X) {
 
 #' Pairwise distance correlation matrix
 #'
-#' @description Compute matrix of pairwise distance correlations.
+#' @description Compute upper triangular matrix of pairwise distance
+#' correlations.
 #'
 #' @param X A matrix.
 #'
@@ -46,57 +44,44 @@ dcor_mat <- function(X) {
             mat[[i, j]] <- energy::dcor(X[, i], X[, j])
         }
     }
-    mat[lower.tri(mat)] <- t(mat)[lower.tri(mat)]
-    diag(mat) <- 1
     return(mat)
 }
 
 ###############################################################################
 
-#' Count Matrix Differences
+#' Count matrix differences
 #'
 #' @description Compute various statistics comparing two count matrices.
 #'
-#' @param sce1 A SingleCellExperiment.
-#' @param sce2 A SingleCellExperiment.
-#' @param assay The assay to use.
+#' @param sce1 A \code{SingleCellExperiment}.
+#' @param sce2 A \code{SingleCellExperiment}.
 #' @param stats Which statistics to compute.
 #'
-#' @returns A vector of statistics.
+#' @returns A \code{data.frame}.
 #'
 #' @export
 compareCounts <- function(sce1,
                           sce2,
-                          assay = "counts",
                           stats = c("pearson",
                                     "spearman",
                                     "kendall",
                                     "mi",
                                     "bicor",
                                     "dcor")) {
-    if (!assay %in% names(SummarizedExperiment::assays(sce1))) {
-        stop("Assay ", assay, " not found in sce1.")
-    }
-    if (!assay %in% names(SummarizedExperiment::assays(sce2))) {
-        stop("Assay ", assay, " not found in sce2.")
-    }
     stats <- match.arg(stats, several.ok = TRUE)
 
-    X1 <- Matrix::t(as.matrix(SummarizedExperiment::assay(sce1, assay)))
-    X2 <- Matrix::t(as.matrix(SummarizedExperiment::assay(sce2, assay)))
+    X1 <- as.matrix(Matrix::t(SingleCellExperiment::counts(sce1)))
+    X2 <- as.matrix(Matrix::t(SingleCellExperiment::counts(sce2)))
 
-    # Compute L1, L2, and Linf matrix norms
-    errs <- function(A, B, name) {
-        d <- abs(A - B)
-        data.frame(
-            stat = rep(name, 3),
-            norm = c("one", "two", "inf"),
-            err = c(sum(d), sqrt(sum(d^2)), max(d))
-        )
+    compute_rmse <- function(A, B) {
+        Au <- A[upper.tri(A)]
+        Bu <- B[upper.tri(B)]
+        return(sqrt(mean((Au - Bu)^2)))
     }
 
-    res <- NULL
-    for (cx in stats) {
+    rmse <- c()
+    for (i in seq_along(stats)) {
+        cx <- stats[i]
         if (cx %in% c("pearson", "spearman", "kendall")) {
             fun <- function(Y) { stats::cor(Y, method = cx) }
         } else if (cx == "mi") {
@@ -106,10 +91,10 @@ compareCounts <- function(sce1,
         } else if (cx == "dcor") {
             fun <- dcor_mat
         }
-        res <- rbind(res, errs(fun(X1), fun(X2), cx))
+        rmse[i] <- compute_rmse(fun(X1), fun(X2))
     }
 
-    return(res)
+    return(data.frame(stat = stats, rmse = rmse))
 }
 
 ###############################################################################
