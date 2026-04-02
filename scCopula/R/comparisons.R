@@ -49,39 +49,50 @@ dcor_mat <- function(X) {
 
 ###############################################################################
 
-#' Count matrix differences
+#' Count Matrix Differences
 #'
 #' @description Compute various statistics comparing two count matrices.
 #'
-#' @param sce1 A \code{SingleCellExperiment}.
-#' @param sce2 A \code{SingleCellExperiment}.
+#' @param sce1 A SingleCellExperiment.
+#' @param sce2 A SingleCellExperiment.
+#' @param assay The assay to use.
 #' @param stats Which statistics to compute.
 #'
-#' @returns A \code{data.frame}.
+#' @returns A vector of statistics.
 #'
 #' @export
 compareCounts <- function(sce1,
                           sce2,
+                          assay = "counts",
                           stats = c("pearson",
                                     "spearman",
                                     "kendall",
                                     "mi",
                                     "bicor",
                                     "dcor")) {
+    if (!assay %in% names(SummarizedExperiment::assays(sce1))) {
+        stop("Assay ", assay, " not found in sce1.")
+    }
+    if (!assay %in% names(SummarizedExperiment::assays(sce2))) {
+        stop("Assay ", assay, " not found in sce2.")
+    }
     stats <- match.arg(stats, several.ok = TRUE)
 
-    X1 <- as.matrix(Matrix::t(SingleCellExperiment::counts(sce1)))
-    X2 <- as.matrix(Matrix::t(SingleCellExperiment::counts(sce2)))
+    X1 <- Matrix::t(as.matrix(SummarizedExperiment::assay(sce1, assay)))
+    X2 <- Matrix::t(as.matrix(SummarizedExperiment::assay(sce2, assay)))
 
-    compute_rmse <- function(A, B) {
-        Au <- A[upper.tri(A)]
-        Bu <- B[upper.tri(B)]
-        return(sqrt(mean((Au - Bu)^2)))
+    # Compute L1, L2, and Linf matrix norms
+    errs <- function(A, B, name) {
+        d <- abs(A - B)
+        data.frame(
+            stat = rep(name, 3),
+            norm = c("one", "two", "inf"),
+            err = c(sum(d), sqrt(sum(d^2)), max(d))
+        )
     }
 
-    rmse <- c()
-    for (i in seq_along(stats)) {
-        cx <- stats[i]
+    res <- NULL
+    for (cx in stats) {
         if (cx %in% c("pearson", "spearman", "kendall")) {
             fun <- function(Y) { stats::cor(Y, method = cx) }
         } else if (cx == "mi") {
@@ -91,10 +102,10 @@ compareCounts <- function(sce1,
         } else if (cx == "dcor") {
             fun <- dcor_mat
         }
-        rmse[i] <- compute_rmse(fun(X1), fun(X2))
+        res <- rbind(res, errs(fun(X1), fun(X2), cx))
     }
 
-    return(data.frame(stat = stats, rmse = rmse))
+    return(res)
 }
 
 ###############################################################################

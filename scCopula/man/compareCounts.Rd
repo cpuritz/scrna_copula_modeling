@@ -2,23 +2,26 @@
 % Please edit documentation in R/comparisons.R
 \name{compareCounts}
 \alias{compareCounts}
-\title{Count matrix differences}
+\title{Count Matrix Differences}
 \usage{
 compareCounts(
   sce1,
   sce2,
+  assay = "counts",
   stats = c("pearson", "spearman", "kendall", "mi", "bicor", "dcor")
 )
 }
 \arguments{
-\item{sce1}{A \code{SingleCellExperiment}.}
+\item{sce1}{A SingleCellExperiment.}
 
-\item{sce2}{A \code{SingleCellExperiment}.}
+\item{sce2}{A SingleCellExperiment.}
+
+\item{assay}{The assay to use.}
 
 \item{stats}{Which statistics to compute.}
 }
 \value{
-A \code{data.frame}.
+A vector of statistics.
 }
 \description{
 Compute various statistics comparing two count matrices.

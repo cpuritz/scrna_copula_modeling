@@ -17,6 +17,7 @@ Imports:
     rvinecopulib,
     SingleCellExperiment,
     stats,
+    SummarizedExperiment,
     TruncatedNormal,
     WGCNA
 Authors@R: 
