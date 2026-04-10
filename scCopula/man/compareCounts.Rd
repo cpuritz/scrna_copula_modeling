@@ -7,7 +7,6 @@
 compareCounts(
   sce1,
   sce2,
-  assay = "counts",
   stats = c("pearson", "spearman", "kendall", "mi", "bicor", "dcor")
 )
 }
@@ -15,8 +14,6 @@ compareCounts(
 \item{sce1}{A SingleCellExperiment.}
 
 \item{sce2}{A SingleCellExperiment.}
-
-\item{assay}{The assay to use.}
 
 \item{stats}{Which statistics to compute.}
 }
