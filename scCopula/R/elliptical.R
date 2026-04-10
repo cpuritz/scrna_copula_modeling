@@ -474,7 +474,7 @@ gaussian_mle_par <- function(FX,
     opt <- optimParallel::optimParallel(
         par = par0,
         fn = loglik,
-        parallel = list(cl = cl)
+        parallel = list(cl = cl, forward = TRUE)
     )
 
     # Map back to correlation matrix
