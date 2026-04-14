@@ -10,6 +10,7 @@ RoxygenNote: 7.3.3
 Imports: 
     copula,
     energy,
+    fitdistrplus,
     Matrix,
     mvtnorm,
     optimParallel,
