@@ -10,11 +10,12 @@ RoxygenNote: 7.3.3
 Imports: 
     copula,
     energy,
-    fitdistrplus,
+    MASS,
     Matrix,
     mvtnorm,
     optimParallel,
     parallel,
+    pscl,
     rvinecopulib,
     SingleCellExperiment,
     stats,

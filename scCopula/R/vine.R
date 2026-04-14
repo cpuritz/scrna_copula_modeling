@@ -5,8 +5,9 @@
 #' @param sce A SingleCellExperiment.
 #' @param margins One, or a list of, marginal distribution functions. If only
 #' one function is passed, all margins are modeled identically. Entries can also
-#' equal "empirical" or "nb", in which case the corresponding margin is modeled
-#' empirically or as a negative binomial, respectively.
+#' equal "empirical" or "par", in which case the corresponding margin is modeled
+#' empirically or as a negative binomial/zero-inflated negative binomial
+#' (selected by AIC), respectively.
 #' @param jitter Logical indicating whether data should be jittered.
 #' @param family_set Family set to use for vine copula construction.
 #' @param cores Number of cores for parallel computation.
@@ -42,15 +43,8 @@ fitVine <- function(sce,
         if (is.character(margins[[i]])) {
             if (margins[[i]] == "empirical") {
                 margins[[i]] <- empcdf(X[, i])
-            } else if (margins[[i]] == "nb") {
-                par <- fitdistrplus::fitdist(
-                    data = X[, i],
-                    distr = "nbinom",
-                    method = "mle"
-                )$estimate
-                margins[[i]] <- function(q) {
-                    do.call(stats::pnbinom, c(as.list(par), list(q = q)))
-                }
+            } else if (margins[[i]] == "par") {
+                margins[[i]] <- par_margin(X[, i])
             }
         }
     }

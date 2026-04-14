@@ -11,8 +11,9 @@ fitT(sce, margins, Sigma = NULL, likelihood = TRUE)
 
 \item{margins}{One, or a list of, marginal distribution functions. If only
 one function is passed, all margins are modeled identically. Entries can also
-equal "empirical" or "nb", in which case the corresponding margin is modeled
-empirically or as a negative binomial, respectively.}
+equal "empirical" or "par", in which case the corresponding margin is modeled
+empirically or as a negative binomial/zero-inflated negative binomial
+(selected by AIC), respectively.}
 
 \item{Sigma}{Optional precomputed estimate of scale matrix.}
 
