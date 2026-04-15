@@ -6,7 +6,7 @@
 \usage{
 fitGaussian(
   sce,
-  margins,
+  margins = c("empirical", "par"),
   mle = TRUE,
   jitter = FALSE,
   likelihood = TRUE,
@@ -16,11 +16,10 @@ fitGaussian(
 \arguments{
 \item{sce}{A SingleCellExperiment.}
 
-\item{margins}{One, or a list of, marginal distribution functions. If only
-one function is passed, all margins are modeled identically. Entries can also
-equal "empirical" or "par", in which case the corresponding margin is modeled
-empirically or as a negative binomial/zero-inflated negative binomial
-(selected by AIC), respectively.}
+\item{margins}{Type of marginal distribution. Either "empirical" or "par". If
+the former, margins are modeled empirically. If the latter, margins are
+modeled as negative binomial/zero-inflated negative binomial (selected by
+AIC).}
 
 \item{mle}{Logical indicating whether maximum likelihood estimation should
 be performed to estimate the correlation matrix. If \code{FALSE}, the sample

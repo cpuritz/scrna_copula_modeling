@@ -3,11 +3,10 @@
 #' Fit a vine copula to a SingleCellExperiment
 #'
 #' @param sce A SingleCellExperiment.
-#' @param margins One, or a list of, marginal distribution functions. If only
-#' one function is passed, all margins are modeled identically. Entries can also
-#' equal "empirical" or "par", in which case the corresponding margin is modeled
-#' empirically or as a negative binomial/zero-inflated negative binomial
-#' (selected by AIC), respectively.
+#' @param margins Type of marginal distribution. Either "empirical" or "par". If
+#' the former, margins are modeled empirically. If the latter, margins are
+#' modeled as negative binomial/zero-inflated negative binomial (selected by
+#' AIC).
 #' @param jitter Logical indicating whether data should be jittered.
 #' @param family_set Family set to use for vine copula construction.
 #' @param cores Number of cores for parallel computation.
@@ -16,7 +15,7 @@
 #'
 #' @export
 fitVine <- function(sce,
-                    margins,
+                    margins = c("empirical", "par"),
                     jitter = FALSE,
                     family_set = c("indep", "gaussian", "clayton",
                                    "gumbel", "frank", "joe"),
@@ -25,34 +24,16 @@ fitVine <- function(sce,
         stop("'sce' must be a SingleCellExperiment.")
     }
     ngene <- dim(sce)[1]
-    if (length(margins) == 1) {
-        margins <- rep(list(margins), ngene)
-    }
-    if (length(margins) != ngene) {
-        stop("Length of 'margins' must equal 1 or the number of genes in",
-             " 'sce'.")
-    }
+    margins <- match.arg(margins)
     family_set <- match.arg(family_set, several.ok = TRUE)
     cores <- as.integer(cores)
 
     # Count matrix
     X <- as.matrix(Matrix::t(SingleCellExperiment::counts(sce)))
 
-    # Construct marginal distribution functions if necessary
-    for (i in 1:ngene) {
-        if (is.character(margins[[i]])) {
-            if (margins[[i]] == "empirical") {
-                margins[[i]] <- empcdf(X[, i])
-            } else if (margins[[i]] == "par") {
-                margins[[i]] <- par_margin(X[, i])
-            }
-        }
-    }
-
-    # Check that all margins are now functions
-    if (!all(sapply(margins, is.function))) {
-        stop("'margins' must be a list of functions.")
-    }
+    # Construct marginal distribution functions
+    mfun <- ifelse(margins == "empirical", empcdf, par_margin)
+    margins <- apply(X, 2, mfun, simplify = FALSE)
 
     # Evaluate margins at samples
     FX <- sapply(1:ngene, function(i) { margins[[i]](X[, i]) })

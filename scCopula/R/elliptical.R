@@ -3,11 +3,10 @@
 #' Fit a Gaussian copula to a SingleCellExperiment
 #'
 #' @param sce A SingleCellExperiment.
-#' @param margins One, or a list of, marginal distribution functions. If only
-#' one function is passed, all margins are modeled identically. Entries can also
-#' equal "empirical" or "par", in which case the corresponding margin is modeled
-#' empirically or as a negative binomial/zero-inflated negative binomial
-#' (selected by AIC), respectively.
+#' @param margins Type of marginal distribution. Either "empirical" or "par". If
+#' the former, margins are modeled empirically. If the latter, margins are
+#' modeled as negative binomial/zero-inflated negative binomial (selected by
+#' AIC).
 #' @param mle Logical indicating whether maximum likelihood estimation should
 #' be performed to estimate the correlation matrix. If \code{FALSE}, the sample
 #' correlation matrix is used.
@@ -19,7 +18,7 @@
 #'
 #' @export
 fitGaussian <- function(sce,
-                        margins,
+                        margins = c("empirical", "par"),
                         mle = TRUE,
                         jitter = FALSE,
                         likelihood = TRUE,
@@ -28,12 +27,7 @@ fitGaussian <- function(sce,
         stop("'sce' must be a SingleCellExperiment.")
     }
     ngene <- dim(sce)[1]
-    if (length(margins) == 1) {
-        margins <- rep(list(margins), ngene)
-    }
-    if (length(margins) != ngene) {
-        stop("Length of 'margins' be one or the number of genes in 'sce'.")
-    }
+    margins <- match.arg(margins)
     if (!is.logical(mle)) {
         stop("'mle' must be 'logical'.")
     }
@@ -42,21 +36,9 @@ fitGaussian <- function(sce,
     # Count matrix
     X <- as.matrix(Matrix::t(SingleCellExperiment::counts(sce)))
 
-    # Construct marginal distribution functions if necessary
-    for (i in 1:ngene) {
-        if (is.character(margins[[i]])) {
-            if (margins[[i]] == "empirical") {
-                margins[[i]] <- empcdf(X[, i])
-            } else if (margins[[i]] == "par") {
-                margins[[i]] <- par_margin(X[, i])
-            }
-        }
-    }
-
-    # Check that all margins are now functions
-    if (!all(sapply(margins, is.function))) {
-        stop("'margins' must be a list of functions.")
-    }
+    # Construct marginal distribution functions
+    mfun <- ifelse(margins == "empirical", empcdf, par_margin)
+    margins <- apply(X, 2, mfun, simplify = FALSE)
 
     # Evaluate margins at samples
     FX <- sapply(1:ngene, function(i) { margins[[i]](X[, i]) })
@@ -147,11 +129,10 @@ fitGaussian <- function(sce,
 #' Fit a t copula to a SingleCellExperiment
 #'
 #' @param sce A SingleCellExperiment.
-#' @param margins One, or a list of, marginal distribution functions. If only
-#' one function is passed, all margins are modeled identically. Entries can also
-#' equal "empirical" or "par", in which case the corresponding margin is modeled
-#' empirically or as a negative binomial/zero-inflated negative binomial
-#' (selected by AIC), respectively.
+#' @param margins Type of marginal distribution. Either "empirical" or "par". If
+#' the former, margins are modeled empirically. If the latter, margins are
+#' modeled as negative binomial/zero-inflated negative binomial (selected by
+#' AIC).
 #' @param Sigma Optional precomputed estimate of scale matrix.
 #' @param likelihood Whether to compute likelihood.
 #'
@@ -159,38 +140,21 @@ fitGaussian <- function(sce,
 #'
 #' @export
 fitT <- function(sce,
-                 margins,
+                 margins = c("empirical", "par"),
                  Sigma = NULL,
                  likelihood = TRUE) {
     if (!inherits(sce, "SingleCellExperiment")) {
         stop("'sce' must be a SingleCellExperiment.")
     }
     ngene <- dim(sce)[1]
-    if (length(margins) == 1) {
-        margins <- rep(list(margins), ngene)
-    }
-    if (length(margins) != ngene) {
-        stop("Length of 'margins' be one or the number of genes in 'sce'.")
-    }
+    margins <- match.arg(margins)
 
     # Count matrix
     X <- as.matrix(Matrix::t(SingleCellExperiment::counts(sce)))
 
-    # Construct marginal distribution functions if necessary
-    for (i in 1:ngene) {
-        if (is.character(margins[[i]])) {
-            if (margins[[i]] == "empirical") {
-                margins[[i]] <- empcdf(X[, i])
-            } else if (margins[[i]] == "par") {
-                margins[[i]] <- par_margin(X[, i])
-            }
-        }
-    }
-
-    # Check that all margins are now functions
-    if (!all(sapply(margins, is.function))) {
-        stop("'margins' must be a list of functions.")
-    }
+    # Construct marginal distribution functions
+    mfun <- ifelse(margins == "empirical", empcdf, par_margin)
+    margins <- apply(X, 2, mfun, simplify = FALSE)
 
     # Evaluate margins at samples
     FX <- sapply(1:ngene, function(i) { margins[[i]](X[, i]) })
