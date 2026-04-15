@@ -44,6 +44,18 @@ empcdf <- function(x) {
 #'
 #' @export
 par_margin <- function(x) {
+    # If there are no zeros, fit a NB
+    if (min(x) > 0) {
+        fit_nb <- MASS::glm.nb(x ~ 1)
+        mu <- exp(fit_nb$coefficients[["(Intercept)"]])
+        size <- fit_nb$theta
+        # Compute CDF
+        pX <- function(q) {
+            stats::pnbinom(q, size = size, mu  = mu)
+        }
+        return(pX)
+    }
+
     # Fit negative binomial
     fit_nb <- MASS::glm.nb(x ~ 1)
 
