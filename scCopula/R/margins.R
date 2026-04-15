@@ -44,20 +44,19 @@ empcdf <- function(x) {
 #'
 #' @export
 par_margin <- function(x) {
+    # Fit negative binomial
+    fit_nb <- MASS::glm.nb(x ~ 1)
+
     # If there are no zeros, fit a NB
     if (min(x) > 0) {
-        fit_nb <- MASS::glm.nb(x ~ 1)
         mu <- exp(fit_nb$coefficients[["(Intercept)"]])
         size <- fit_nb$theta
-        # Compute CDF
+        # Build CDF
         pX <- function(q) {
-            stats::pnbinom(q, size = size, mu  = mu)
+            stats::pnbinom(q, size = size, mu = mu)
         }
         return(pX)
     }
-
-    # Fit negative binomial
-    fit_nb <- MASS::glm.nb(x ~ 1)
 
     # Fit zero-inflated negative binomial
     fit_zinb <- pscl::zeroinfl(x ~ 1 | 1, dist = "negbin")
@@ -87,6 +86,69 @@ par_margin <- function(x) {
         }
     }
     return(pX)
+}
+
+###############################################################################
+
+#' Parametric quantile functions for count data
+#'
+#' @description Constructs either a negative binomial or zero-inflated negative
+#' binomial quantile function for count data. The family is automatically
+#' selected by minimizing AIC.
+#'
+#' @param x Numeric vector of count data.
+#'
+#' @returns A function implementing the quantile function of x.
+#'
+#' @export
+par_quantile <- function(x) {
+    # Fit negative binomial
+    fit_nb <- MASS::glm.nb(x ~ 1)
+
+    # If there are no zeros, fit a NB
+    if (min(x) > 0) {
+        mu <- exp(fit_nb$coefficients[["(Intercept)"]])
+        size <- fit_nb$theta
+        # Build quantile function
+        qX <- function(p) {
+            stats::qnbinom(p, size = size, mu = mu)
+        }
+        return(qX)
+    }
+
+    # Fit zero-inflated negative binomial
+    fit_zinb <- pscl::zeroinfl(x ~ 1 | 1, dist = "negbin")
+
+    # Choose model with lower AIC
+    aic_nb <- stats::AIC(fit_nb)
+    aic_zinb <- stats::AIC(fit_zinb)
+
+    if (aic_nb < aic_zinb) {
+        # Extract NB parameters
+        mu <- exp(fit_nb$coefficients[["(Intercept)"]])
+        size <- fit_nb$theta
+
+        # Build quantile function
+        qX <- function(p) {
+            stats::qnbinom(p, size = size, mu = mu)
+        }
+    } else {
+        # Extract ZINB parameters
+        mu <- exp(fit_zinb$coefficients$count[["(Intercept)"]])
+        size <- fit_zinb$theta
+        pi <- stats::plogis(fit_zinb$coefficients$zero[["(Intercept)"]])
+
+        # Build quantile function
+        qX <- function(p) {
+            q <- numeric(length(p))
+            q[p <= pi] <- 0
+            idx <- (p > pi)
+            u <- (p[idx] - pi) / (1 - pi)
+            q[idx] <- stats::qnbinom(u, mu = mu, size = size)
+            return(as.integer(q))
+        }
+    }
+    return(qX)
 }
 
 ###############################################################################
