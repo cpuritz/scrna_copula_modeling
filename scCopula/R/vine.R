@@ -50,6 +50,11 @@ fitVine <- function(sce,
     }
     colnames(U) <- NULL
 
+    # Push values away from boundaries of unit cube
+    eps <- 1e-12
+    U[U > 1 - eps] <- 1 - eps
+    U[U < eps] <- eps
+
     # Fit vine copula
     vine <- rvinecopulib::vinecop(
         data = U,

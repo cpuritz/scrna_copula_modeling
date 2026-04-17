@@ -12,7 +12,6 @@ Imports:
     energy,
     MASS,
     Matrix,
-    mvtnorm,
     optimParallel,
     parallel,
     pscl,

@@ -4,19 +4,19 @@
 \alias{gaussian_mle}
 \title{Maximum Likelihood Estimation of Gaussian Correlation Matrix for Count Data}
 \usage{
-gaussian_mle(FX, FXm, ...)
+gaussian_mle(FX, FXm, cores)
 }
 \arguments{
 \item{FX}{Margins evaluated at samples.}
 
 \item{FXm}{Margins evaluated at left limits of samples.}
 
-\item{...}{Additional arguments to pass to \code{stats::optim}.}
+\item{cores}{Number of cores to use for parallel computation.}
 }
 \value{
 Maximum likelihood estimation of correlation matrix.
 }
 \description{
 Maximum likelihood estimation of the correlation matrix for a Gaussian
-copula model of count data.
+copula model of count data. Optimization is parallelized.
 }

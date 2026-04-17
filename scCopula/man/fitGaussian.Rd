@@ -7,9 +7,7 @@
 fitGaussian(
   sce,
   margins = c("empirical", "par"),
-  mle = TRUE,
-  jitter = FALSE,
-  likelihood = TRUE,
+  estimate = c("sample", "jitter", "mle"),
   cores = 1L
 )
 }
@@ -21,13 +19,11 @@ the former, margins are modeled empirically. If the latter, margins are
 modeled as negative binomial/zero-inflated negative binomial (selected by
 AIC).}
 
-\item{mle}{Logical indicating whether maximum likelihood estimation should
-be performed to estimate the correlation matrix. If \code{FALSE}, the sample
-correlation matrix is used.}
-
-\item{jitter}{Logical indicating whether data should be jittered.}
-
-\item{likelihood}{Whether to compute likelihood.}
+\item{estimate}{How should the correlation matrix be estimated. One of
+\code{"sample"}, \code{"jitter"}, or \code{"mle"}. The first uses the
+sample correlation matrix of the pseudo-observations. The second uses the
+sample correlation matrix of jittered pseudo-observations. The third performs
+maximum likelihood estimation using the count data.}
 
 \item{cores}{Number of cores.}
 }
