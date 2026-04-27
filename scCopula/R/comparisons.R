@@ -19,10 +19,11 @@ mi_mat <- function(X) {
         sum(stats::na.omit(as.vector(pxy * log(pxy / px %*% t(py)))))
     }
     for (i in 1:(d - 1)) {
-        for (j in (i + 1):d) {
-            mat[[i, j]] <- mi(X[, i], X[, j])
+        for (j in i:d) {
+            mat[[i, j]] <- mat[[j, i]] <- mi(X[, i], X[, j])
         }
     }
+    mat[[d, d]] <- mi(X[, d], X[, d])
     return(mat)
 }
 
@@ -40,10 +41,11 @@ dcor_mat <- function(X) {
     d <- dim(X)[2]
     mat <- matrix(nrow = d, ncol = d)
     for (i in 1:(d - 1)) {
-        for (j in (i + 1):d) {
-            mat[[i, j]] <- energy::dcor(X[, i], X[, j])
+        for (j in i:d) {
+            mat[[i, j]] <- mat[[j, i]] <- energy::dcor(X[, i], X[, j])
         }
     }
+    mat[[d, d]] <- energy::dcor(X[, d], X[, d])
     return(mat)
 }
 
@@ -76,9 +78,7 @@ compareCounts <- function(sce1,
     erf <- function(A, B, fun) {
         fA <- fun(A)
         fB <- fun(B)
-        vfA <- fA[upper.tri(fA)]
-        vfB <- fB[upper.tri(fB)]
-        return(sqrt(mean((vfA - vfB)^2)))
+        return(sqrt(sum((fA - fB)^2)) / sqrt(sum(fB^2)))
     }
 
     err <- c()
