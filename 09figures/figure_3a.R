@@ -31,8 +31,7 @@ sim <- function(sce, family) {
             cop <- scCopula::fitGaussian(
                 sce_ct,
                 margins = "empirical",
-                mle = FALSE,
-                likelihood = FALSE
+                estimate = "sample"
             )
         } else if (family == "ind") {
             cop <- scCopula::fitIndep(sce_ct)
@@ -104,4 +103,4 @@ pplt <- ggplot(pca_ex$df,
           strip.background = element_blank(),
           strip.text = element_text(size = 13),
           legend.title = element_blank())
-saveRDS(pca_ex, file = "Results/04pca/pca_ex.rds")
+saveRDS(pca_ex, file = "Results/05pca/pca_ex.rds")

@@ -68,4 +68,4 @@ df <- data.frame(
     cells = rep(nc, nrun),
     time = unlist(times)
 )
-saveRDS(df, file = paste0("Results/05times/", family, "_", ng, "_", nc, ".rds"))
+saveRDS(df, file = paste0("Results/07times/", family, "_", ng, "_", nc, ".rds"))

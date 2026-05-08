@@ -10,44 +10,38 @@ set.seed(0)
 setwd("~/Documents/Graduate School/Copula Paper/")
 source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
 
-files <- list.files("Results/03samples", full.names = TRUE)
-files <- files[grepl(".rds", files)]
+files <- list.files("Results/04pairwise", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
 rownames(res) <- NULL
-res <- res[res$family != "boot", ]
+
+nna <- sum(is.na(res$err))
+message(nna, "/", dim(res)[1], " samples had NA error and will be discarded.")
+res <- na.omit(res)
 
 res <- res %>%
-    dplyr::filter(norm == "two" & family != "boot") %>%
-    dplyr::mutate(rmse = err / ngene) %>%
-    dplyr::select(-norm, -err) %>%
-    tidyr::pivot_wider(names_from = stat, values_from = rmse) %>%
+    tidyr::pivot_wider(names_from = stats, values_from = err) %>%
     dplyr::group_by(ref, family, trial) %>%
     dplyr::summarize(
-        ngene = unique(ngene),
-        ncell = unique(ncell),
-        pearson = mean(pearson),
-        spearman = mean(spearman),
-        kendall = mean(kendall),
-        mi = mean(mi),
-        bicor = mean(bicor),
-        dCor = mean(dcor),
+        pearson = mean(pearson, na.rm = TRUE),
+        spearman = mean(spearman, na.rm = TRUE),
+        kendall = mean(kendall, na.rm = TRUE),
+        mi = mean(mi, na.rm = TRUE),
+        bicor = mean(bicor, na.rm = TRUE),
+        dcor = mean(dcor, na.rm = TRUE),
         .groups = "drop"
     ) %>%
-    na.omit() %>%
     dplyr::group_by(ref, family) %>%
     dplyr::summarize(
-        ngene = unique(ngene),
-        ncell = unique(ncell),
         Pearson = mean(pearson),
-        Kendall = mean(kendall),
         Spearman = mean(spearman),
-        'Mutual information' = mean(mi),
-        'Biweight midcorrelation' = mean(bicor),
-        'Distance correlation' = mean(dCor),
+        Kendall = mean(kendall),
+        "Mutual Information" = mean(mi),
+        "Biweight Midcorrelation" = mean(bicor),
+        "Distance Correlation" = mean(dcor),
         .groups = "drop"
     ) %>%
     dplyr::mutate(family = as.character(family)) %>%
-    dplyr::mutate(family = case_match(
+    dplyr::mutate(family = recode_values(
         family,
         "ind" ~ "Independence",
         "norm" ~ "Gaussian",
@@ -56,49 +50,54 @@ res <- res %>%
         "vine_jitter" ~ "Jittered Vine",
         "nmle" ~ "ML Gaussian",
         "t" ~ "t",
-        .default = family
+        "zinbwave" ~ "ZINB-WaVE",
+        "sparsim" ~ "SPARSim"
     )) %>%
     dplyr::mutate(family = factor(
         family,
         levels = c("Independence", "Gaussian", "Jittered Gaussian",
-                   "ML Gaussian", "t", "Vine", "Jittered Vine")
+                   "ML Gaussian", "t", "Vine", "Jittered Vine",
+                   "ZINB-WaVE", "SPARSim")
     ))
 
-colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3, 4, 6, 1)]
+colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3, 4, 6, 1, 8, 9)]
 names(colors) <- c("Independence", "Jittered Gaussian", "Gaussian",
-                   "Jittered Vine", "Vine", "ML Gaussian", "t")
+                   "Jittered Vine", "Vine", "ML Gaussian", "t",
+                   "ZINB-WaVE", "SPARSim")
 
-vars <- c("Pearson", "Spearman", "Kendall", "Mutual information",
-          "Biweight midcorrelation", "Distance correlation")
-
+vars <- setdiff(colnames(res), c("ref", "family"))
 df <- melt(res, id.vars = c("family", "ref"), measure.vars = vars)
-df$value <- log10(df$value)
+df$value <- log(df$value)
 
 pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
     geom_boxplot(outliers = FALSE) +
     geom_point(size = 0.7, position = position_dodge2(width = 0.22)) +
-    geom_line(aes(group = ref), linewidth = 0.018, linetype = "dashed",
+    geom_line(aes(group = ref), linewidth = 0.1, linetype = "dashed",
               color = "gray", position = position_dodge2(width = 0.22),
-              alpha = 0.7) +
+              alpha = 0.6
+              ) +
     scale_fill_manual(values = colors) +
     facet_wrap(~ variable, nrow = 2, scales = "free_y") +
-    ylab(expression(log[10](RMSE))) +
     xlab(NULL) +
+    ylab(expression(log(Frobenius~Error))) +
     theme_bw() +
     theme(
         axis.title = element_text(size = 13),
-        axis.text.x = element_text(size = 13, color = "black", angle = 45, hjust = 1),
+        axis.text.x = element_blank(),
         axis.text.y = element_text(size = 13, color = "black"),
+        axis.ticks.x = element_blank(),
         panel.border = element_blank(),
         axis.line = element_line(),
         panel.grid = element_blank(),
         plot.title = element_text(size = 13, hjust = 0.5),
-        legend.position = "none",
+        legend.position = "right",
+        legend.title = element_blank(),
+        legend.text = element_text(size = 13),
         strip.text = element_text(size = 13, color = "black"),
         panel.spacing.x = unit(0.9, "cm")
     )
 
-ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 10, height = 9)
+ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 12, height = 7)
 
 eff <- function(f1, f2, m) {
     r1 <- res[res$family == f1, ]
@@ -107,8 +106,10 @@ eff <- function(f1, f2, m) {
     return(effsize::cohen.d(r1[[m]], r2[[m]], paired = TRUE)$estimate)
 }
 
+cops <- c("Gaussian", "Jittered Gaussian", "ML Gaussian", "t", "Vine",
+          "Jittered Vine")
 comp <- pairwise_wilcox_test(
-    df = res[res$family != "Independence", ],
+    df = res[res$family %in% cops, ],
     cols = vars,
     group_var = "family",
     block_var = "ref",
@@ -129,22 +130,22 @@ for (i in seq_len(dim(comp)[1])) {
 effs <- apply(comp, 1, function(r) { eff(r["V1"], r["V2"], r["var"]) })
 
 comp <- comp %>%
-    rename(family1 = V1, family2 = V2, measure = var) %>%
-    mutate(pval = sprintf("%.5e", pval),
-           padj = sprintf("%.5e", padj),
-           stat = sprintf("%.5f", stat)) %>%
-    mutate(
-        measure = case_match(
+    dplyr::rename(family1 = V1, family2 = V2, measure = var) %>%
+    dplyr::mutate(pval = sprintf("%.5e", pval),
+                  padj = sprintf("%.5e", padj),
+                  stat = sprintf("%.5f", stat)) %>%
+    dplyr::mutate(
+        measure = dplyr::recode_values(
             measure,
             "Pearson" ~ "pearson",
             "Kendall" ~ "kendall",
             "Spearman" ~ "spearman",
-            "Distance correlation" ~ "dcor",
-            "Biweight midcorrelation" ~ "bicor",
-            "Mutual information" ~ "MI"),
+            "Distance Correlation" ~ "dcor",
+            "Biweight Midcorrelation" ~ "bicor",
+            "Mutual Information" ~ "MI"),
         eff = sprintf("%.5f", abs(effs))
     ) %>%
-    arrange(desc(eff))
+    dplyr::arrange(dplyr::desc(eff))
 
 write.csv(
     x = comp,

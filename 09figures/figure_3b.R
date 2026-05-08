@@ -9,29 +9,28 @@ set.seed(0)
 setwd("~/Documents/Graduate School/Copula Paper/")
 source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
 
-files <- list.files("Results/04pca", full.names = TRUE)
-files <- files[grepl("pcap", files)]
+files <- list.files("Results/05pca", full.names = TRUE)
+files <- files[grepl(".rds", files) & !grepl("ex", files)]
 res_list <- lapply(files, readRDS)
-for (i in seq_along(res_list)) {
-    res_list[[i]] <- res_list[[i]] %>%
-        dplyr::select(ref, family, trial, sample, ngene, ncell, pval2)
-}
 res <- do.call(rbind, res_list)
 
 family_labels <- c("Independence", "Jittered Gaussian", "Gaussian",
-                   "Jittered Vine", "Vine", "ML Gaussian", "t")
+                   "Jittered Vine", "Vine", "ML Gaussian", "t",
+                   "ZINB-WaVE", "SPARSim")
 names(family_labels) <- family_labels
 
-colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3, 4, 6, 1)]
+colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3, 4, 6, 1, 8, 9)]
 names(colors) <- family_labels
 
 ###############################################################################
 ## Main figure panel B ##
 
 res <- res %>%
+    dplyr::filter(npc == 10) %>%
+    dplyr::select(-npc) %>%
     group_by(ref, family) %>%
-    summarise(pval = mean(pval2), .groups = "drop") %>%
-    mutate(family = factor(case_match(
+    summarise(pval = mean(p), .groups = "drop") %>%
+    mutate(family = factor(recode_values(
         family,
         "norm" ~ "Gaussian",
         "vine" ~ "Vine",
@@ -39,19 +38,22 @@ res <- res %>%
         "t" ~ "t",
         "norm_jitter" ~ "Jittered Gaussian",
         "vine_jitter" ~ "Jittered Vine",
-        "ind" ~ "Independence"
+        "ind" ~ "Independence",
+        "zinbwave" ~ "ZINB-WaVE",
+        "sparsim" ~ "SPARSim"
     ), levels = c("Independence", "Gaussian", "Jittered Gaussian",
-                  "ML Gaussian", "t", "Vine", "Jittered Vine"))) %>%
+                  "ML Gaussian", "t", "Vine", "Jittered Vine", "ZINB-WaVE",
+                  "SPARSim")
+    )) %>%
     melt(id.vars = c("family", "ref"), measure.vars = "pval",
-         value.name = "p") %>%
-    mutate(p = p)
+         value.name = "p")
 
 pplt_b <- ggplot(res, aes(x = family, y = p, fill = family)) +
     geom_boxplot(outliers = FALSE) +
     geom_point(size = 1.1, position = position_dodge2(width = 0.24)) +
-    geom_line(aes(group = ref), linewidth = 0.02, linetype = "dashed",
+    geom_line(aes(group = ref), linewidth = 0.25, linetype = "dashed",
               color = "gray", position = position_dodge2(width = 0.24),
-              alpha = 0.8) +
+              alpha = 0.5) +
     guides(fill = guide_legend(override.aes = list(shape = NA, linetype = 0),
                                title = NULL)) +
     scale_fill_manual(values = colors, labels = family_labels) +
@@ -71,7 +73,7 @@ pplt_b <- ggplot(res, aes(x = family, y = p, fill = family)) +
           plot.margin = margin(5.5, 20, 5.5, 5.5))
 
 comp <- pairwise_wilcox_test(
-    df = res[res$family != "Independence", ],
+    df = res[!res$family %in% c("Independence", "ZINB-WaVE", "SPARSim"), ],
     cols = "p",
     group_var = "family",
     block_var = "ref",
@@ -96,8 +98,8 @@ effs <- apply(comp, 1, function(r) {
 })
 
 comp <- comp %>%
-    rename(family1 = V1, family2 = V2) %>%
-    select(-var) %>%
+    dplyr::rename(family1 = V1, family2 = V2) %>%
+    dplyr::select(-var) %>%
     mutate(pval = sprintf("%.5e", pval),
            padj = sprintf("%.5e", padj),
            stat = sprintf("%.5f", stat)) %>%
@@ -114,7 +116,7 @@ write.csv(
 ###############################################################################
 ## Main figure panel A ##
 
-pca_ex <- readRDS("Results/04pca/pca_ex.rds")
+pca_ex <- readRDS("Results/05pca/pca_ex.rds")
 pplt_a <- ggplot(pca_ex$df,
                  aes(x = PC1, y = PC2, color = group)) +
     geom_point(size = 1.6) +

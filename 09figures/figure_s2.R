@@ -9,32 +9,23 @@ set.seed(0)
 setwd("~/Documents/Graduate School/Copula Paper")
 source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
 
-files <- list.files("Results/04pca", full.names = TRUE)
-files <- files[grepl("pcap", files)]
+files <- list.files("Results/05pca", full.names = TRUE)
+files <- files[grepl(".rds", files) & !grepl("ex", files)]
 res_list <- lapply(files, readRDS)
 res <- do.call(rbind, res_list)
 
 family_labels <- c("Independence", "Jittered Gaussian", "Gaussian",
-                   "Jittered Vine", "Vine", "ML Gaussian", "t")
+                   "Jittered Vine", "Vine", "ML Gaussian", "t",
+                   "ZINB-WaVE", "SPARSim")
 names(family_labels) <- family_labels
-colors <- pal_npg()(10)[c(7, 2, 5, 3, 4, 6, 1)]
+
+colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3, 4, 6, 1, 8, 9)]
 names(colors) <- family_labels
 
 res <- res %>%
-    group_by(ref, family) %>%
-    summarise(
-        pval2 = mean(pval2),
-        pval3 = mean(pval3),
-        pval4 = mean(pval4),
-        pval5 = mean(pval5),
-        pval6 = mean(pval6),
-        pval7 = mean(pval7),
-        pval8 = mean(pval8),
-        pval9 = mean(pval9),
-        pval10 = mean(pval10),
-        .groups = "drop"
-    ) %>%
-    mutate(family = factor(case_match(
+    dplyr::group_by(ref, family, npc) %>%
+    dplyr::summarise(p = mean(p), .groups = "drop") %>%
+    dplyr::mutate(family = factor(dplyr::recode_values(
         family,
         "norm" ~ "Gaussian",
         "vine" ~ "Vine",
@@ -42,16 +33,14 @@ res <- res %>%
         "t" ~ "t",
         "norm_jitter" ~ "Jittered Gaussian",
         "vine_jitter" ~ "Jittered Vine",
-        "ind" ~ "Independence"
+        "ind" ~ "Independence",
+        "sparsim" ~ "SPARSim",
+        "zinbwave" ~ "ZINB-WaVE"
     ), levels = c("Independence", "Gaussian", "Jittered Gaussian",
-                  "ML Gaussian", "t", "Vine", "Jittered Vine"))) %>%
-    melt(id.vars = c("family", "ref"), variable.name = "npc",
-         value.name = "p") %>%
-    mutate(
-        p = p,
-        npc = factor(sapply(npc, function(x) {
-            paste(as.integer(gsub("pval", "", x)), "PCs")
-        }), levels = paste(seq(2, 10), "PCs"))
+                  "ML Gaussian", "t", "Vine", "Jittered Vine",
+                  "ZINB-WaVE","SPARSim"))) %>%
+    dplyr::mutate(
+        npc = factor(paste(npc, "PCs"), levels = paste(seq(2, 10), "PCs"))
     )
 
 pplt <- ggplot(res, aes(x = family, y = p, fill = family)) +
