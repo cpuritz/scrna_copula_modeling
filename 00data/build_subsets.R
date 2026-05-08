@@ -4,8 +4,6 @@ library(scales)
 library(scran)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper")
-
 # Read in gene sets
 hsa04260 <- readRDS("Data/genesets/hsa04260.rds")
 hsa04915 <- readRDS("Data/genesets/hsa04915.rds")
