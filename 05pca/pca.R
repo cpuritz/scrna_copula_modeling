@@ -5,13 +5,17 @@ library(SingleCellExperiment)
 library(fasano.franceschini.test)
 set.seed(0, kind = "L'Ecuyer-CMRG")
 
-cores <- as.integer(commandArgs(trailingOnly = TRUE)[1])
-ix <- as.integer(commandArgs(trailingOnly = TRUE)[2])
+args <- commandArgs(trailingOnly = TRUE)
+cores <- as.integer(args[1])
+ix <- as.integer(args[2])
+npc <- as.integer(args[3])
 
 refs <- list.dirs("Results/02copulas", recursive = FALSE, full.names = FALSE)
 ref <- refs[ix]
 
-families <- c("ind", "norm", "norm_jitter", "vine", "vine_jitter", "nmle", "t")
+message("Running for reference ", ix, ", npc = ", npc)
+
+families <- c("ind", "norm", "norm_jitter", "vine", "vine_jitter", "nmle", "t", "zinbwave", "sparsim")
 ntrial <- 50L
 nsample <- 20L
 
@@ -37,43 +41,28 @@ res <- mclapply(seq(dim(sims)[1]), function(i) {
 
     res_i <- NULL
     for (j in seq(nsample)) {
-        fname <- paste0("Results/03samples/", ref, "/", family, "_", trial, "-", j, ".rds")
-        sce_sim <- readRDS(fname)
+        sce_sim <- readRDS(paste0("Results/03samples/", ref, "/", family, "_", trial, "-", j, "_par.rds"))
         X2 <- as.matrix(t(counts(sce_sim)))
         pc <- proj(X = X1, Y = X2)
 
-		# Run FF tests using 2-10 principal components
-        seeds <- 10 * j + seq(0, 9)
-        test2  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:2],  S2 = pc$Y_pc[, 1:2],  verbose = FALSE, seed = seeds[1])
-        test3  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:3],  S2 = pc$Y_pc[, 1:3],  verbose = FALSE, seed = seeds[2])
-        test4  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:4],  S2 = pc$Y_pc[, 1:4],  verbose = FALSE, seed = seeds[3])
-        test5  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:5],  S2 = pc$Y_pc[, 1:5],  verbose = FALSE, seed = seeds[4])
-        test6  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:6],  S2 = pc$Y_pc[, 1:6],  verbose = FALSE, seed = seeds[5])
-        test7  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:7],  S2 = pc$Y_pc[, 1:7],  verbose = FALSE, seed = seeds[6])
-        test8  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:8],  S2 = pc$Y_pc[, 1:8],  verbose = FALSE, seed = seeds[7])
-        test9  <- fasano.franceschini.test(S1 = pc$X_pc[, 1:9],  S2 = pc$Y_pc[, 1:9],  verbose = FALSE, seed = seeds[8])
-        test10 <- fasano.franceschini.test(S1 = pc$X_pc[, 1:10], S2 = pc$Y_pc[, 1:10], verbose = FALSE, seed = seeds[9])
+        p <- fasano.franceschini.test(
+            S1 = pc$X_pc[, 1:npc], 
+            S2 = pc$Y_pc[, 1:npc],
+            verbose = FALSE,
+            seed = 10 * j + npc
+        )$p.value
 
         res_i <- rbind(res_i, data.frame(
             ref = ref,
             family = family,
             trial = trial,
             sample = j,
-            ngene = dim(sce_sim)[1],
-            ncell = dim(sce_sim)[2],
-            pval2 = as.numeric(test2$p.value),
-            pval3 = as.numeric(test3$p.value),
-            pval4 = as.numeric(test4$p.value),
-            pval5 = as.numeric(test5$p.value)
-            pval6 = as.numeric(test6$p.value),
-            pval7 = as.numeric(test7$p.value),
-            pval8 = as.numeric(test8$p.value)
-            pval9 = as.numeric(test9$p.value),
-            pval10 = as.numeric(test10$p.value)
+            npc = npc,
+            p = as.numeric(p)    
         ))
     }
     return(res_i)
 }, mc.cores = cores)
 res <- do.call(rbind, res)
 rownames(res) <- NULL
-saveRDS(res, file = paste0("Results/04pca/pcap", ix, ".rds"))
+saveRDS(res, file = paste0("Results/05pca/pca_", ix, "_", npc, ".rds"))
