@@ -6,8 +6,7 @@ library(tidyr)
 library(reshape2)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper")
-source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
+source("09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/05pca", full.names = TRUE)
 files <- files[grepl(".rds", files) & !grepl("ex", files)]

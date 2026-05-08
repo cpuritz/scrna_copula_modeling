@@ -4,7 +4,6 @@ library(ggsci)
 library(patchwork)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper")
 files <- list.files("Data/References/Subsets")
 dist <- NULL
 for (i in seq_along(files)) {

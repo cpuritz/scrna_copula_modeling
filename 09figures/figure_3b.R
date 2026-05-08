@@ -6,8 +6,7 @@ library(grid)
 library(ggsci)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper/")
-source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
+source("07figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/05pca", full.names = TRUE)
 files <- files[grepl(".rds", files) & !grepl("ex", files)]
@@ -90,6 +89,7 @@ for (i in seq_len(dim(comp)[1])) {
     }
 }
 
+# Function to compute effect sizes
 effs <- apply(comp, 1, function(r) {
     r1 <- res[res$family == r["V1"], ]
     r2 <- res[res$family == r["V2"], ]

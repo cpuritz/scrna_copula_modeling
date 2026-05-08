@@ -7,15 +7,11 @@ library(ggsignif)
 library(ggsci)
 set.seed(0)
 
-setwd("~/Documents/Graduate School/Copula Paper/")
-source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
+source("09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/04pairwise", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
 rownames(res) <- NULL
-
-nna <- sum(is.na(res$err))
-message(nna, "/", dim(res)[1], " samples had NA error and will be discarded.")
 res <- na.omit(res)
 
 res <- res %>%
@@ -97,8 +93,9 @@ pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
         panel.spacing.x = unit(0.9, "cm")
     )
 
-ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 12, height = 7)
+ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 12, height = 7.5)
 
+# Function to compute effect sizes
 eff <- function(f1, f2, m) {
     r1 <- res[res$family == f1, ]
     r2 <- res[res$family == f2, ]
@@ -106,8 +103,7 @@ eff <- function(f1, f2, m) {
     return(effsize::cohen.d(r1[[m]], r2[[m]], paired = TRUE)$estimate)
 }
 
-cops <- c("Gaussian", "Jittered Gaussian", "ML Gaussian", "t", "Vine",
-          "Jittered Vine")
+cops <- c("Gaussian", "Jittered Gaussian", "ML Gaussian", "t", "Vine", "Jittered Vine")
 comp <- pairwise_wilcox_test(
     df = res[res$family %in% cops, ],
     cols = vars,

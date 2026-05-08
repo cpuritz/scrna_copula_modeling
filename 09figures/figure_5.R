@@ -8,7 +8,7 @@ library(viridis)
 library(patchwork)
 set.seed(0)
 
-files <- list.files("Results/05times", full.names = TRUE)
+files <- list.files("Results/07times", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
 
 res <- res %>%

@@ -2,8 +2,7 @@ library(dplyr)
 library(ggplot2)
 library(ggsignif)
 
-setwd("~/Documents/Graduate School/Copula Paper")
-source("scrna_copula_modeling/07figures/pairwise_wilcox_test.R")
+source("09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/06wgcna", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))

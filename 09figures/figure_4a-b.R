@@ -1,12 +1,11 @@
-suppressMessages(library(Seurat))
-suppressMessages(library(SingleCellExperiment))
-suppressMessages(library(WGCNA))
-suppressMessages(library(hdWGCNA))
-suppressMessages(library(dplyr))
-suppressMessages(library(mclust))
+library(Seurat)
+library(SingleCellExperiment)
+library(WGCNA)
+library(hdWGCNA)
+library(dplyr)
+library(mclust)
 set.seed(0, kind = "L'Ecuyer-CMRG")
 
-setwd("~/copgen")
 enableWGCNAThreads(nThreads = 20)
 
 refs <- list.files("Data/References/Subsets/")
