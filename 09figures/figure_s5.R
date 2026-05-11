@@ -6,7 +6,7 @@ library(grid)
 library(ggsci)
 set.seed(0)
 
-source("09figures/pairwise_wilcox_test.R")
+source("scrna_copula_modeling/09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/08margins", full.names = TRUE)
 res_list <- lapply(files, readRDS)
@@ -42,4 +42,4 @@ pplt <- ggplot(res, aes(x = family, y = pct_reject, fill = family)) +
 		  legend.position = "none",
 		  plot.margin = margin(5.5, 20, 5.5, 5.5))
 
-ggsave(plot = pplt, filename = "Figures/margins.pdf", width = 8, height = 5)
+ggsave(plot = pplt, filename = "Figures/figure_s5.pdf", width = 8, height = 5)

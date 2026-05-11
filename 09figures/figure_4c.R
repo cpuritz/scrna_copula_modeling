@@ -2,7 +2,7 @@ library(dplyr)
 library(ggplot2)
 library(ggsignif)
 
-source("09figures/pairwise_wilcox_test.R")
+source("scrna_copula_modeling/09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/06wgcna", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
@@ -36,9 +36,9 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
     scale_fill_manual(values = colors) +
     geom_point(position = position_dodge2(width = 0.3), color = "black",
                size = 2) +
-    geom_line(aes(group = ref), linewidth = 0.05, linetype = "solid",
+    geom_line(aes(group = ref), linewidth = 0.02, linetype = "solid",
               color = "gray", position = position_dodge2(width = 0.3),
-              alpha = 0.5) +
+              alpha = 0.4) +
     xlab(NULL) +
     ylab(expression(bar(Z)[summary])) +
     scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
