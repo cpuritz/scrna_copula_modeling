@@ -14,7 +14,7 @@ res <- res %>%
     summarize(Z = mean(Z), .groups = "drop") %>%
     mutate(family = recode_values(
         family,
-        "norm" ~ "Gaussian",
+        "norm" ~ "Sample Gaussian",
         "norm_jitter" ~ "Jittered Gaussian",
         "vine_jitter" ~ "Jittered Vine",
         "ind" ~ "Independence",
@@ -23,12 +23,12 @@ res <- res %>%
     )) %>%
     mutate(family = factor(
         family,
-        levels = c("Independence", "Gaussian", "Jittered Gaussian",
+        levels = c("Independence", "Sample Gaussian", "Jittered Gaussian",
                    "Jittered Vine", "ZINB-WaVE", "SPARSim")
     ))
 
 colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3, 8, 9)]
-names(colors) <- c("Independence", "Jittered Gaussian", "Gaussian",
+names(colors) <- c("Independence", "Jittered Gaussian", "Sample Gaussian",
                    "Jittered Vine", "ZINB-WaVE", "SPARSim")
 
 pplt <- ggplot(res, aes(x = family, y = Z)) +
@@ -36,9 +36,9 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
     scale_fill_manual(values = colors) +
     geom_point(position = position_dodge2(width = 0.3), color = "black",
                size = 2) +
-    geom_line(aes(group = ref), linewidth = 0.02, linetype = "solid",
+    geom_line(aes(group = ref), linewidth = 0.01, linetype = "solid",
               color = "gray", position = position_dodge2(width = 0.3),
-              alpha = 0.4) +
+              alpha = 0.3) +
     xlab(NULL) +
     ylab(expression(bar(Z)[summary])) +
     scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
@@ -51,7 +51,7 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
         panel.border = element_blank(),
         axis.line = element_line(color = "black")
     )
-ggsave(pplt, filename = "Figures/figure_4c.pdf", width = 10, height = 5.25)
+ggsave(pplt, filename = "Figures/figure_4c.pdf", width = 10.5, height = 5.25)
 
 cops <- c("Gaussian", "Jittered Gaussian", "Jittered Vine")
 comp <- pairwise_wilcox_test(

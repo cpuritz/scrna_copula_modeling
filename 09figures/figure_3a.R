@@ -75,14 +75,14 @@ df <- rbind(
     mutate(rbind(df0, mutate(as.data.frame(pc_ind),
                              group = "Independence")), plot = "2"),
     mutate(rbind(df0, mutate(as.data.frame(pc_norm),
-                             group = "Gaussian")), plot = "3")
+                             group = "Sample Gaussian")), plot = "3")
 )
 df$group <- factor(df$group, levels = c("Reference",
                                         "Independence",
-                                        "Gaussian"))
+                                        "Sample Gaussian"))
 pca_ex <- list(df = df, labels = labels)
 colors <- setNames(c(ggsci::pal_npg()(10)[c(7, 5)], "#767676"),
-                   c("Independence", "Gaussian", "Reference"))
+                   c("Independence", "Sample Gaussian", "Reference"))
 pplt <- ggplot(pca_ex$df,
                  aes(x = PC1, y = PC2, color = group)) +
     geom_point(size = 1.3) +

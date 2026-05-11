@@ -6,14 +6,14 @@ library(tidyr)
 library(reshape2)
 set.seed(0)
 
-source("09figures/pairwise_wilcox_test.R")
+source("scrna_copula_modeling/09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/05pca", full.names = TRUE)
 files <- files[grepl(".rds", files) & !grepl("ex", files)]
 res_list <- lapply(files, readRDS)
 res <- do.call(rbind, res_list)
 
-family_labels <- c("Independence", "Jittered Gaussian", "Gaussian",
+family_labels <- c("Independence", "Jittered Gaussian", "Sample Gaussian",
                    "Jittered Vine", "Vine", "ML Gaussian", "t",
                    "ZINB-WaVE", "SPARSim")
 names(family_labels) <- family_labels
@@ -26,7 +26,7 @@ res <- res %>%
     dplyr::summarise(p = mean(p), .groups = "drop") %>%
     dplyr::mutate(family = factor(dplyr::recode_values(
         family,
-        "norm" ~ "Gaussian",
+        "norm" ~ "Sample Gaussian",
         "vine" ~ "Vine",
         "nmle" ~ "ML Gaussian",
         "t" ~ "t",
@@ -35,7 +35,7 @@ res <- res %>%
         "ind" ~ "Independence",
         "sparsim" ~ "SPARSim",
         "zinbwave" ~ "ZINB-WaVE"
-    ), levels = c("Independence", "Gaussian", "Jittered Gaussian",
+    ), levels = c("Independence", "Sample Gaussian", "Jittered Gaussian",
                   "ML Gaussian", "t", "Vine", "Jittered Vine",
                   "ZINB-WaVE","SPARSim"))) %>%
     dplyr::mutate(

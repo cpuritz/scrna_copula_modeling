@@ -7,7 +7,7 @@ library(ggsignif)
 library(ggsci)
 set.seed(0)
 
-source("09figures/pairwise_wilcox_test.R")
+source("scrna_copula_modeling/09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/04pairwise", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
@@ -40,7 +40,7 @@ res <- res %>%
     dplyr::mutate(family = recode_values(
         family,
         "ind" ~ "Independence",
-        "norm" ~ "Gaussian",
+        "norm" ~ "Sample Gaussian",
         "vine" ~ "Vine",
         "norm_jitter" ~ "Jittered Gaussian",
         "vine_jitter" ~ "Jittered Vine",
@@ -51,13 +51,13 @@ res <- res %>%
     )) %>%
     dplyr::mutate(family = factor(
         family,
-        levels = c("Independence", "Gaussian", "Jittered Gaussian",
+        levels = c("Independence", "Sample Gaussian", "Jittered Gaussian",
                    "ML Gaussian", "t", "Vine", "Jittered Vine",
                    "ZINB-WaVE", "SPARSim")
     ))
 
 colors <- ggsci::pal_npg()(10)[c(7, 2, 5, 3, 4, 6, 1, 8, 9)]
-names(colors) <- c("Independence", "Jittered Gaussian", "Gaussian",
+names(colors) <- c("Independence", "Jittered Gaussian", "Sample Gaussian",
                    "Jittered Vine", "Vine", "ML Gaussian", "t",
                    "ZINB-WaVE", "SPARSim")
 
@@ -68,10 +68,9 @@ df$value <- log(df$value)
 pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
     geom_boxplot(outliers = FALSE) +
     geom_point(size = 0.7, position = position_dodge2(width = 0.22)) +
-    geom_line(aes(group = ref), linewidth = 0.1, linetype = "dashed",
+    geom_line(aes(group = ref), linewidth = 0.1, linetype = "solid",
               color = "gray", position = position_dodge2(width = 0.22),
-              alpha = 0.6
-              ) +
+              alpha = 0.4) +
     scale_fill_manual(values = colors) +
     facet_wrap(~ variable, nrow = 2, scales = "free_y") +
     xlab(NULL) +
@@ -103,7 +102,8 @@ eff <- function(f1, f2, m) {
     return(effsize::cohen.d(r1[[m]], r2[[m]], paired = TRUE)$estimate)
 }
 
-cops <- c("Gaussian", "Jittered Gaussian", "ML Gaussian", "t", "Vine", "Jittered Vine")
+cops <- c("Sample Gaussian", "Jittered Gaussian", "ML Gaussian", "t", "Vine",
+          "Jittered Vine")
 comp <- pairwise_wilcox_test(
     df = res[res$family %in% cops, ],
     cols = vars,

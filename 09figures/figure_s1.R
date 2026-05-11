@@ -76,7 +76,6 @@ get_annot <- function(x) {
     )
 }
 
-
 pplt <- wrap_elements(pplt1 + get_annot("a")) +
     wrap_elements(pplt2 + get_annot("b")) +
     plot_layout(nrow = 1, widths = c(0.56, 0.44))

@@ -6,14 +6,14 @@ library(grid)
 library(ggsci)
 set.seed(0)
 
-source("07figures/pairwise_wilcox_test.R")
+source("scrna_copula_modeling/09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Results/05pca", full.names = TRUE)
 files <- files[grepl(".rds", files) & !grepl("ex", files)]
 res_list <- lapply(files, readRDS)
 res <- do.call(rbind, res_list)
 
-family_labels <- c("Independence", "Jittered Gaussian", "Gaussian",
+family_labels <- c("Independence", "Jittered Gaussian", "Sample Gaussian",
                    "Jittered Vine", "Vine", "ML Gaussian", "t",
                    "ZINB-WaVE", "SPARSim")
 names(family_labels) <- family_labels
@@ -31,7 +31,7 @@ res <- res %>%
     summarise(pval = mean(p), .groups = "drop") %>%
     mutate(family = factor(recode_values(
         family,
-        "norm" ~ "Gaussian",
+        "norm" ~ "Sample Gaussian",
         "vine" ~ "Vine",
         "nmle" ~ "ML Gaussian",
         "t" ~ "t",
@@ -40,7 +40,7 @@ res <- res %>%
         "ind" ~ "Independence",
         "zinbwave" ~ "ZINB-WaVE",
         "sparsim" ~ "SPARSim"
-    ), levels = c("Independence", "Gaussian", "Jittered Gaussian",
+    ), levels = c("Independence", "Sample Gaussian", "Jittered Gaussian",
                   "ML Gaussian", "t", "Vine", "Jittered Vine", "ZINB-WaVE",
                   "SPARSim")
     )) %>%
@@ -50,9 +50,9 @@ res <- res %>%
 pplt_b <- ggplot(res, aes(x = family, y = p, fill = family)) +
     geom_boxplot(outliers = FALSE) +
     geom_point(size = 1.1, position = position_dodge2(width = 0.24)) +
-    geom_line(aes(group = ref), linewidth = 0.25, linetype = "dashed",
+    geom_line(aes(group = ref), linewidth = 0.10, linetype = "solid",
               color = "gray", position = position_dodge2(width = 0.24),
-              alpha = 0.5) +
+              alpha = 0.3) +
     guides(fill = guide_legend(override.aes = list(shape = NA, linetype = 0),
                                title = NULL)) +
     scale_fill_manual(values = colors, labels = family_labels) +

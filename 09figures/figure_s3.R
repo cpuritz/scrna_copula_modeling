@@ -8,23 +8,23 @@ library(viridis)
 library(patchwork)
 set.seed(0)
 
-files <- list.files("Results/05times", full.names = TRUE)
+files <- list.files("Results/07times", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
 
 res <- res %>%
-    group_by(family, genes, cells) %>%
-    summarize(time = mean(time), .groups = "drop") %>%
-    mutate(family = case_match(
+    dplyr::group_by(family, genes, cells) %>%
+    dplyr::summarize(time = mean(time), .groups = "drop") %>%
+    dplyr::mutate(family = dplyr::recode_values(
         family,
-        "norm" ~ "Gaussian",
+        "norm" ~ "Sample Gaussian",
         "norm_jitter" ~ "Jittered Gaussian",
         "vine" ~ "Vine",
         "vine_jitter" ~ "Jittered Vine",
         "nmle" ~ "ML-Gaussian",
         "t" ~ "t"
     )) %>%
-    mutate(family = factor(family, levels = c(
-        "Gaussian", "Vine", "ML-Gaussian", "Jittered Gaussian",
+    dplyr::mutate(family = factor(family, levels = c(
+        "Sample Gaussian", "Vine", "ML-Gaussian", "Jittered Gaussian",
         "Jittered Vine", "t"
     )))
 
@@ -36,11 +36,11 @@ time_ratio <- function(x, y) {
 }
 
 hists <- list()
-hists[[1]] <- ggplot(time_ratio("Gaussian", "Jittered Gaussian"), aes(x)) +
+hists[[1]] <- ggplot(time_ratio("Sample Gaussian", "Jittered Gaussian"), aes(x)) +
     geom_histogram(bins = 15, fill = "#4DBBD5FF", color = "black") +
     xlab("Ratio") +
     ylab("Frequency") +
-    ggtitle("Gaussian / Jittered Gaussian") +
+    ggtitle("Sample Gaussian / Jittered Gaussian") +
     scale_y_continuous(expand = c(0, 0, 0, 0.4),
                        breaks = pretty_breaks(n = 4))
 hists[[2]] <- plot_spacer()
@@ -67,4 +67,4 @@ pplt <- wrap_plots(hists, nrow = 1, widths = c(1, 0.01, 1, 0.01, 1)) &
         axis.text = element_text(size = 13, color = "black"),
         plot.title = element_text(size = 13, hjust = 0.5)
     )
-ggsave(plot = pplt, filename = "Figures/figure_s3.pdf", width = 9.5, height = 4)
+ggsave(plot = pplt, filename = "Figures/figure_s3.pdf", width = 10.75, height = 4)

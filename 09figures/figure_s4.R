@@ -7,7 +7,7 @@ library(ggsignif)
 library(ggsci)
 set.seed(0)
 
-source("09figures/pairwise_wilcox_test.R")
+source("scrna_copula_modeling/09figures/pairwise_wilcox_test.R")
 
 files <- list.files("Data/References/Subsets")
 qc_df <- NULL
@@ -100,15 +100,16 @@ colnames(qc_corr) <- c("qc", "Statistic", "Copula", "cor")
 
 qc_corr <- qc_corr %>%
 	dplyr::mutate(
-		Copula = recode_values(
+		Copula = factor(recode_values(
 			Copula,
-			"norm" ~ "Gaussian",
+			"norm" ~ "Sample Gaussian",
 			"vine" ~ "Vine",
 			"norm_jitter" ~ "Jittered Gaussian",
 			"vine_jitter" ~ "Jittered Vine",
 			"nmle" ~ "ML Gaussian",
 			"t" ~ "t"
-		),
+		), levels = c("Sample Gaussian", "Jittered Gaussian",
+					  "ML Gaussian", "t", "Vine", "Jittered Vine")),
 		Statistic = recode_values(
 			Statistic,
 			"pearson" ~ "Pearson",

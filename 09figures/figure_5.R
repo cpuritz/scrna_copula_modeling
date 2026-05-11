@@ -16,7 +16,7 @@ res <- res %>%
     summarize(time = mean(time), .groups = "drop") %>%
     mutate(family = case_match(
         family,
-        "norm" ~ "Gaussian",
+        "norm" ~ "Sample Gaussian",
         "norm_jitter" ~ "Jittered Gaussian",
         "vine" ~ "Vine",
         "vine_jitter" ~ "Jittered Vine",
@@ -24,7 +24,7 @@ res <- res %>%
         "t" ~ "t"
     )) %>%
     mutate(family = factor(family, levels = c(
-        "Gaussian", "Jittered Gaussian", "ML Gaussian", "t",
+        "Sample Gaussian", "Jittered Gaussian", "ML Gaussian", "t",
         "Vine", "Jittered Vine"
     )))
 
