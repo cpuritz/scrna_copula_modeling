@@ -1,144 +1,70 @@
 library(dplyr)
 library(ggplot2)
-library(patchwork)
+library(tibble)
 library(tidyr)
-library(reshape2)
-library(ggsignif)
 library(ggsci)
+library(scales)
+library(viridis)
+library(patchwork)
 set.seed(0)
 
-source("scrna_copula_modeling/09figures/pairwise_wilcox_test.R")
-
-files <- list.files("Data/References/Subsets")
-qc_df <- NULL
-for (f in files) {
-	sce <- readRDS(paste0("Data/References/Subsets/", f))
-	qc_df <- rbind(qc_df, data.frame(
-		ref = unlist(strsplit(f, ".rds"))[1],
-		countsPerGene = median(rowSums(counts(sce))),
-		countsPerCell = median(colSums(counts(sce))),
-		totalCounts = sum(counts(sce)),
-		nGene = dim(sce)[1],
-		nCell = dim(sce)[2],
-		pctZero = mean(counts(sce) == 0),
-		pctNonzeroPerCell = median(colMeans(counts(sce) > 0))
-	))
-}
-
-files <- list.files("Results/08margins", full.names = TRUE)
+files <- list.files("Results/07times", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
 
-##### Pairwise association ####
+res <- res %>%
+    dplyr::group_by(family, genes, cells) %>%
+    dplyr::summarize(time = mean(time), .groups = "drop") %>%
+    dplyr::mutate(family = dplyr::recode_values(
+        family,
+        "norm" ~ "Sample Gaussian",
+        "norm_jitter" ~ "Jittered Gaussian",
+        "vine" ~ "Vine",
+        "vine_jitter" ~ "Jittered Vine",
+        "nmle" ~ "ML-Gaussian",
+        "t" ~ "t"
+    )) %>%
+    dplyr::mutate(family = factor(family, levels = c(
+        "Sample Gaussian", "Vine", "ML-Gaussian", "Jittered Gaussian",
+        "Jittered Vine", "t"
+    )))
 
-files <- list.files("Results/04pairwise", full.names = TRUE)
-res2 <- do.call(rbind, lapply(files, readRDS)) %>%
-	na.omit() %>%
-	tidyr::pivot_wider(names_from = stats, values_from = err) %>%
-	dplyr::group_by(ref, family) %>%
-	dplyr::summarize(
-        pearson = mean(pearson, na.rm = TRUE),
-        spearman = mean(spearman, na.rm = TRUE),
-        kendall = mean(kendall, na.rm = TRUE),
-        mi = mean(mi, na.rm = TRUE),
-        bicor = mean(bicor, na.rm = TRUE),
-        dcor = mean(dcor, na.rm = TRUE),
-        .groups = "drop"
-    )
-
-################
-#### PCA ####
-
-files <- list.files("Results/05pca", full.names = TRUE)
-files <- files[grepl(".rds", files) & !grepl("ex", files)]
-res_list <- lapply(files, readRDS)
-res3 <- do.call(rbind, res_list) %>%
-	dplyr::filter(npc == 10) %>%
-	dplyr::select(-npc) %>%
-	dplyr::group_by(ref, family) %>%
-	dplyr::summarise(p = -mean(p), .groups = "drop")
-
-################
-
-files <- list.files("Results/06wgcna", full.names = TRUE)
-res4 <- do.call(rbind, lapply(files, readRDS)) %>%
-	na.omit() %>%
-	group_by(family, ref, trial) %>%
-	summarize(Z = mean(Z, na.rm = TRUE), .groups = "drop") %>%
-	group_by(family, ref) %>%
-	summarize(Z = -mean(Z), .groups = "drop")
-
-################
-
-files <- list.files("Results/08margins", full.names = TRUE)
-res8 <- do.call(rbind, lapply(files, readRDS))
-colnames(res8)[3] <- "pctMarginsRejected"
-
-################
-
-res <- dplyr::full_join(res2, res3, by = c("ref", "family")) %>%
-	dplyr::full_join(res4, by = c("ref", "family")) %>%
-	dplyr::full_join(res8, by = c("ref", "family")) %>%
-	dplyr::full_join(qc_df, by = "ref")
-
-stats <- c("pearson", "spearman", "kendall", "mi", "bicor", "dcor", "p", "Z")
-qc_vars <- c("countsPerGene", "countsPerCell", "totalCounts", "nGene", "nCell",
-			 "pctZero", "pctNonzeroPerCell", "pctMarginsRejected")
-fams <- c("norm", "norm_jitter", "vine", "vine_jitter", "nmle", "t")
-combs <- expand.grid(qc_vars, stats, fams)
-cors <- c()
-for (i in seq_len(dim(combs)[1])) {
-	m <- res[res$family == combs[i, 3], c(combs[i, 1], combs[i, 2])]
-	m <- na.omit(m)
-	if (dim(m)[1] > 0) {
-		cors <- c(cors, cor(m)[1, 2])
-	} else {
-		cors <- c(cors, NA)
-	}
+time_ratio <- function(x, y) {
+    rx <- res[res$family == x, ]
+    ry <- res[res$family == y, ]
+    assertthat::assert_that(all(rx$cells == ry$cells), all(rx$genes == ry$genes))
+    return(data.frame(x = rx$time / ry$time))
 }
-qc_corr <- cbind(combs, cors)
-colnames(qc_corr) <- c("qc", "Statistic", "Copula", "cor")
 
-qc_corr <- qc_corr %>%
-	dplyr::mutate(
-		Copula = factor(recode_values(
-			Copula,
-			"norm" ~ "Sample Gaussian",
-			"vine" ~ "Vine",
-			"norm_jitter" ~ "Jittered Gaussian",
-			"vine_jitter" ~ "Jittered Vine",
-			"nmle" ~ "ML Gaussian",
-			"t" ~ "t"
-		), levels = c("Sample Gaussian", "Jittered Gaussian",
-					  "ML Gaussian", "t", "Vine", "Jittered Vine")),
-		Statistic = recode_values(
-			Statistic,
-			"pearson" ~ "Pearson",
-			"spearman" ~ "Spearman",
-			"kendall" ~ "Kendall",
-			"mi" ~ "MI",
-			"bicor" ~ "Bicor",
-			"dcor" ~ "dCor",
-			"p" ~ "-p",
-			"Z" ~ "-Z"
-		)
-	) %>%
-	na.omit()
+hists <- list()
+hists[[1]] <- ggplot(time_ratio("Sample Gaussian", "Jittered Gaussian"), aes(x)) +
+    geom_histogram(bins = 15, fill = "#4DBBD5FF", color = "black") +
+    xlab("Ratio") +
+    ylab("Frequency") +
+    ggtitle("Sample Gaussian / Jittered Gaussian") +
+    scale_y_continuous(expand = c(0, 0, 0, 0.4),
+                       breaks = pretty_breaks(n = 4))
+hists[[2]] <- plot_spacer()
+hists[[3]] <- ggplot(time_ratio("Vine", "Jittered Vine"), aes(x)) +
+    geom_histogram(bins = 15, fill = "#4DBBD5FF", color = "black") +
+    xlab("Ratio") +
+    ylab(NULL) +
+    ggtitle("Vine / Jittered Vine") +
+    scale_y_continuous(expand = c(0, 0, 0, 0.22))
+hists[[4]] <- plot_spacer()
+hists[[5]] <- ggplot(time_ratio("t", "ML-Gaussian"), aes(x)) +
+    geom_histogram(bins = 11, fill = "#4DBBD5FF", color = "black") +
+    xlab("Ratio") +
+    ylab(NULL) +
+    ggtitle("t / ML Gaussian") +
+    scale_y_continuous(expand = c(0, 0, 0, 0.16))
 
-pplt <- ggplot(data = qc_corr, aes(x = qc, y = cor)) +
-	geom_boxplot(outliers = FALSE) +
-	geom_point(aes(color = Statistic, shape = Copula), size = 3.25,
-			   position = position_dodge2(width = 0.35)) +
-	ylab("Pearson correlation") +
-	xlab(NULL) +
-	ylim(c(-1, 1)) +
-	theme_bw() +
-	geom_hline(yintercept = 0, color = "gray", linetype = "dashed") +
-	theme(
-		axis.title = element_text(size = 13),
-		axis.text.x = element_text(size = 13, color = "black", angle = 30,
-								   hjust = 1, vjust = 1),
-		axis.text.y = element_text(size = 12, color = "black"),
-		legend.text = element_text(size = 13),
-		legend.title = element_text(size = 13)
-	)
-ggsave(plot = pplt, filename = "Figures/figure_s4.pdf", width = 13, height = 6.5)
+pplt <- wrap_plots(hists, nrow = 1, widths = c(1, 0.01, 1, 0.01, 1)) &
+    theme_bw() +
+    theme(
+        panel.grid = element_blank(),
+        axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13, margin = margin(r = 7)),
+        axis.text = element_text(size = 13, color = "black"),
+        plot.title = element_text(size = 13, hjust = 0.5)
+    )
+ggsave(plot = pplt, filename = "Figures/figure_s4.pdf", width = 10.75, height = 4)

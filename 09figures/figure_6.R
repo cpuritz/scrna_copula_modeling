@@ -47,4 +47,4 @@ pplt <- ggplot(res, aes(x = genes, y = time)) +
         legend.title = element_text(size = 13, margin = margin(b = 10)),
         legend.key.height = unit(1.2, "cm")
     )
-ggsave(plot = pplt, filename = "Figures/figure_5.pdf", width = 10.5, height = 6.5)
+ggsave(plot = pplt, filename = "Figures/figure_6.pdf", width = 10.5, height = 6.5)

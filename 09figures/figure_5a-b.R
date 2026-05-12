@@ -78,10 +78,10 @@ p <- GetModulePreservation(seurat_sim, "comp")$Z
 p <- p[!rownames(p) %in% c("gold", "grey"), ]
 z <- data.frame(module = rownames(p), Z = p$Zsummary.pres, size = p$moduleSize)
 
-# Figure 4a
+# Figure 5a
 PlotDendrogram(seurat_ref)
 
-# Figure 4b
+# Figure 5b
 colors <- c("blue" = "#2A6EBBFF", "brown" = "#CD202CFF",
             "turquoise" = "#00B2A9FF", "yellow" = "#F0AB00FF")
 pplt <- ggplot(z, aes(x = size, y = Z, color = module)) +

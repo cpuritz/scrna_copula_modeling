@@ -51,7 +51,7 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
         panel.border = element_blank(),
         axis.line = element_line(color = "black")
     )
-ggsave(pplt, filename = "Figures/figure_4c.pdf", width = 10.5, height = 5.25)
+ggsave(pplt, filename = "Figures/figure_5c.pdf", width = 10.5, height = 5.25)
 
 cops <- c("Gaussian", "Jittered Gaussian", "Jittered Vine")
 comp <- pairwise_wilcox_test(
