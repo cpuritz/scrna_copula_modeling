@@ -3,8 +3,6 @@ library(parallel)
 library(SingleCellExperiment)
 set.seed(0, kind = "L'Ecuyer-CMRG")
 
-setwd("/projects/b1167/connor_puritz/copgen")
-
 args <- commandArgs(trailingOnly = TRUE)
 cores <- as.integer(args[1])
 ref_ix <- as.integer(args[2])
@@ -12,7 +10,6 @@ ref_ix <- as.integer(args[2])
 refs <- list.dirs("Results/03samples", recursive = FALSE, full.names = FALSE)
 ref <- refs[ref_ix]
 
-message("Testing library size for ", ref)
 ntrial <- 50L
 nsample <- 20L
 
@@ -24,7 +21,7 @@ ngene <- dim(sce)[1]
 families <- c("ind", "norm", "norm_jitter", "vine", "vine_jitter", "nmle", "t", "zinbwave", "sparsim")
 sims <- expand.grid(family = families, trial = seq(ntrial))
 
-pct_reject <- c()
+pvals_all <- c()
 for (i in seq_len(dim(sims)[1])) {
 	message(i, "/", dim(sims)[1])
 	family <- sims[i, "family"]
@@ -41,14 +38,12 @@ for (i in seq_len(dim(sims)[1])) {
 		lib_sim <- colSums(counts(sce_sim))
 		return(ks.test(lib_test, lib_sim, exact = TRUE)$p)
 	}, mc.cores = cores)
-	padj <- p.adjust(unlist(pvals), method = "fdr")
-	pct_reject[i] <- mean(padj <= 0.05)
+    pvals_all[i] <- mean(unlist(pvals))
 }
-sims$pct_reject <- pct_reject
+sims$pval <- pvals_all
 sims$ref <- ref
 sims <- sims %>%
 	dplyr::group_by(family, ref) %>%
-	dplyr::summarize(pct_reject = mean(pct_reject), .groups = "drop")
+	dplyr::summarize(pval = mean(pval), .groups = "drop")
 
 saveRDS(sims, file = paste0("Results/08margins/libsize_", ref_ix, ".rds"))
-message("Done!")
