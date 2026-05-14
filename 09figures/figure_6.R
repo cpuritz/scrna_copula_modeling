@@ -12,9 +12,9 @@ files <- list.files("Results/07times", full.names = TRUE)
 res <- do.call(rbind, lapply(files, readRDS))
 
 res <- res %>%
-    group_by(family, genes, cells) %>%
-    summarize(time = mean(time), .groups = "drop") %>%
-    mutate(family = case_match(
+    dplyr::group_by(family, genes, cells) %>%
+    dplyr::summarize(time = mean(time), .groups = "drop") %>%
+    dplyr::mutate(family = dplyr::recode_values(
         family,
         "norm" ~ "Sample Gaussian",
         "norm_jitter" ~ "Jittered Gaussian",
@@ -23,13 +23,13 @@ res <- res %>%
         "nmle" ~ "ML Gaussian",
         "t" ~ "t"
     )) %>%
-    mutate(family = factor(family, levels = c(
+    dplyr::mutate(family = factor(family, levels = c(
         "Sample Gaussian", "Jittered Gaussian", "ML Gaussian", "t",
         "Vine", "Jittered Vine"
     )))
 
 pplt <- ggplot(res, aes(x = genes, y = time)) +
-    geom_point(aes(color = cells), size = 2.2) +
+    geom_point(aes(color = cells), size = 2.6) +
     facet_wrap(~ family, scales = "free_y") +
     scale_color_viridis() +
     scale_y_continuous(transform = transform_log10(),

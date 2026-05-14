@@ -1,29 +1,48 @@
 ###############################################################################
 
-#' Pairwise mutual information matrix
+#' Pairwise normalized mutual information matrix
 #'
-#' @description Compute upper triangular matrix of pairwise mutual information.
+#' @description Compute upper triangular matrix of pairwise normalized mutual
+#' information.
 #'
 #' @param X A matrix.
 #'
 #' @returns A matrix.
-mi_mat <- function(X) {
+nmi_mat <- function(X) {
     n <- dim(X)[1]
     d <- dim(X)[2]
-    mat <- matrix(nrow = d, ncol = d)
-    mi <- function(a, b) {
-        table_xy <- table(a, b)
-        pxy <- table_xy / n
-        px <- rowSums(table_xy) / n
-        py <- colSums(table_xy) / n
-        sum(stats::na.omit(as.vector(pxy * log(pxy / px %*% t(py)))))
+
+    entropy <- function(x) {
+        p <- table(x) / length(x)
+        -sum(p * log(p))
     }
+
+    mi <- function(x, y) {
+        table_xy <- table(x, y)
+        pxy <- table_xy / length(x)
+        px <- rowSums(pxy)
+        py <- colSums(pxy)
+        terms <- as.vector(pxy * log(pxy / (px %*% t(py))))
+        sum(terms[is.finite(terms)])
+    }
+
+    nmi <- function(x, y) {
+        hx <- entropy(x)
+        hy <- entropy(y)
+        if (hx == 0 || hy == 0) {
+            return(0)
+        }
+        mi(x, y) / sqrt(hx * hy)
+    }
+
+    mat <- matrix(0, nrow = d, ncol = d)
     for (i in 1:(d - 1)) {
-        for (j in i:d) {
-            mat[[i, j]] <- mat[[j, i]] <- mi(X[, i], X[, j])
+        for (j in (i + 1):d) {
+            mat[[i, j]] <- mat[[j, i]] <- nmi(X[, i], X[, j])
         }
     }
-    mat[[d, d]] <- mi(X[, d], X[, d])
+    diag(mat) <- 1
+
     return(mat)
 }
 
@@ -41,11 +60,11 @@ dcor_mat <- function(X) {
     d <- dim(X)[2]
     mat <- matrix(nrow = d, ncol = d)
     for (i in 1:(d - 1)) {
-        for (j in i:d) {
+        for (j in (i + 1):d) {
             mat[[i, j]] <- mat[[j, i]] <- energy::dcor(X[, i], X[, j])
         }
     }
-    mat[[d, d]] <- energy::dcor(X[, d], X[, d])
+    diag(mat) <- 1
     return(mat)
 }
 
@@ -67,7 +86,7 @@ compareCounts <- function(sce1,
                           stats = c("pearson",
                                     "spearman",
                                     "kendall",
-                                    "mi",
+                                    "nmi",
                                     "bicor",
                                     "dcor")) {
     stats <- match.arg(stats, several.ok = TRUE)
@@ -86,8 +105,8 @@ compareCounts <- function(sce1,
         cx <- stats[i]
         if (cx %in% c("pearson", "spearman", "kendall")) {
             fun <- function(Y) { stats::cor(Y, method = cx) }
-        } else if (cx == "mi") {
-            fun <- mi_mat
+        } else if (cx == "nmi") {
+            fun <- nmi_mat
         } else if (cx == "bicor") {
             fun <- WGCNA::bicor
         } else if (cx == "dcor") {

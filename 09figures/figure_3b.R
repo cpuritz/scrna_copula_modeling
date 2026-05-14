@@ -49,7 +49,7 @@ res <- res %>%
 
 pplt_b <- ggplot(res, aes(x = family, y = p, fill = family)) +
     geom_boxplot(outliers = FALSE) +
-    geom_point(size = 1.1, position = position_dodge2(width = 0.24)) +
+    geom_point(size = 1.6, position = position_dodge2(width = 0.24)) +
     geom_line(aes(group = ref), linewidth = 0.10, linetype = "solid",
               color = "gray", position = position_dodge2(width = 0.24),
               alpha = 0.3) +
@@ -57,7 +57,7 @@ pplt_b <- ggplot(res, aes(x = family, y = p, fill = family)) +
                                title = NULL)) +
     scale_fill_manual(values = colors, labels = family_labels) +
     xlab(NULL) +
-    ylab("p-value") +
+    ylab("FF p-value") +
     theme_bw() +
     theme(panel.border = element_blank(),
           axis.line = element_line(),

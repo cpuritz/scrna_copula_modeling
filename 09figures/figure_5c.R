@@ -35,7 +35,7 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
     geom_boxplot(aes(fill = family), outliers = FALSE) +
     scale_fill_manual(values = colors) +
     geom_point(position = position_dodge2(width = 0.3), color = "black",
-               size = 2) +
+               size = 2.2) +
     geom_line(aes(group = ref), linewidth = 0.01, linetype = "solid",
               color = "gray", position = position_dodge2(width = 0.3),
               alpha = 0.3) +
@@ -44,14 +44,14 @@ pplt <- ggplot(res, aes(x = family, y = Z)) +
     scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     theme_bw() +
     theme(
-        axis.text = element_text(size = 13, color = "black"),
-        axis.title = element_text(size = 13),
+        axis.text = element_text(size = 15, color = "black"),
+        axis.title = element_text(size = 15),
         legend.position = "none",
         panel.grid = element_blank(),
         panel.border = element_blank(),
         axis.line = element_line(color = "black")
     )
-ggsave(pplt, filename = "Figures/figure_5c.pdf", width = 10.5, height = 5.25)
+ggsave(pplt, filename = "Figures/figure_5c.pdf", width = 11.5, height = 5.25)
 
 cops <- c("Gaussian", "Jittered Gaussian", "Jittered Vine")
 comp <- pairwise_wilcox_test(

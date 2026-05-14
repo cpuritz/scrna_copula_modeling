@@ -48,7 +48,7 @@ pplt_a <- ggplot(res, aes(x = family, y = ls, fill = family)) +
 			  alpha = 0.3) +
 	scale_fill_manual(values = colors) +
 	xlab(NULL) +
-	ylab("KS test p-value") +
+	ylab("KS p-value") +
 	facet_wrap(~label) +
 	theme_bw() +
 	theme(panel.border = element_blank(),
@@ -71,7 +71,7 @@ pplt_b <- ggplot(res, aes(x = family, y = zp, fill = family)) +
 			  alpha = 0.3) +
 	scale_fill_manual(values = colors) +
 	xlab(NULL) +
-	ylab("KS test p-value") +
+	ylab("KS p-value") +
 	facet_wrap(~label) +
 	theme_bw() +
 	theme(panel.border = element_blank(),

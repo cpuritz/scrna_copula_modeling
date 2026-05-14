@@ -43,11 +43,11 @@ res <- res %>%
     )
 
 pplt <- ggplot(res, aes(x = family, y = p, fill = family)) +
-    geom_boxplot(outlier.size = 0.9) +
+    geom_boxplot(outlier.size = 1.2) +
     facet_wrap(~ npc) +
     scale_fill_manual(values = colors, labels = family_labels) +
     xlab(NULL) +
-    ylab("p-value") +
+    ylab("FF p-value") +
     theme_bw() +
     theme(panel.border = element_blank(),
           axis.line = element_line(),

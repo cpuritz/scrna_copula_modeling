@@ -21,7 +21,7 @@ res <- res %>%
         pearson = mean(pearson, na.rm = TRUE),
         spearman = mean(spearman, na.rm = TRUE),
         kendall = mean(kendall, na.rm = TRUE),
-        mi = mean(mi, na.rm = TRUE),
+        nmi = mean(nmi, na.rm = TRUE),
         bicor = mean(bicor, na.rm = TRUE),
         dcor = mean(dcor, na.rm = TRUE),
         .groups = "drop"
@@ -31,7 +31,7 @@ res <- res %>%
         Pearson = mean(pearson),
         Spearman = mean(spearman),
         Kendall = mean(kendall),
-        "Mutual Information" = mean(mi),
+        "Normalized MI" = mean(nmi),
         "Biweight Midcorrelation" = mean(bicor),
         "Distance Correlation" = mean(dcor),
         .groups = "drop"
@@ -94,14 +94,8 @@ pplt <- ggplot(data = df, aes(x = family, y = value, fill = family)) +
 
 ggsave(plot = pplt, filename = "Figures/figure_2.pdf", width = 12, height = 7.5)
 
-# Function to compute effect sizes
-eff <- function(f1, f2, m) {
-    r1 <- res[res$family == f1, ]
-    r2 <- res[res$family == f2, ]
-    assertthat::assert_that(all(r1$ref == r2$ref))
-    return(effsize::cohen.d(r1[[m]], r2[[m]], paired = TRUE)$estimate)
-}
 
+# Test pairwise comparisons
 cops <- c("Sample Gaussian", "Jittered Gaussian", "ML Gaussian", "t", "Vine",
           "Jittered Vine")
 comp <- pairwise_wilcox_test(
@@ -123,14 +117,23 @@ for (i in seq_len(dim(comp)[1])) {
     }
 }
 
-effs <- apply(comp, 1, function(r) { eff(r["V1"], r["V2"], r["var"]) })
+# Compute effect sizes
+comp$eff <- abs(apply(comp, 1, function(r) {
+    r1 <- res[res$family == r["V1"], ]
+    r2 <- res[res$family == r["V2"], ]
+    assertthat::assert_that(all(r1$ref == r2$ref))
+    var <- r["var"]
+    return(effsize::cohen.d(r1[[var]], r2[[var]], paired = TRUE)$estimate)
+}))
 
 comp <- comp %>%
     dplyr::rename(family1 = V1, family2 = V2, measure = var) %>%
-    dplyr::mutate(pval = sprintf("%.5e", pval),
-                  padj = sprintf("%.5e", padj),
-                  stat = sprintf("%.5f", stat)) %>%
+    dplyr::arrange(dplyr::desc(eff)) %>%
     dplyr::mutate(
+        pval = sprintf("%.5e", pval),
+        padj = sprintf("%.5e", padj),
+        stat = sprintf("%.5f", stat),
+        eff = sprintf("%.5f", eff),
         measure = dplyr::recode_values(
             measure,
             "Pearson" ~ "pearson",
@@ -138,10 +141,8 @@ comp <- comp %>%
             "Spearman" ~ "spearman",
             "Distance Correlation" ~ "dcor",
             "Biweight Midcorrelation" ~ "bicor",
-            "Mutual Information" ~ "MI"),
-        eff = sprintf("%.5f", abs(effs))
-    ) %>%
-    dplyr::arrange(dplyr::desc(eff))
+            "Normalized MI" ~ "nmi")
+    )
 
 write.csv(
     x = comp,
